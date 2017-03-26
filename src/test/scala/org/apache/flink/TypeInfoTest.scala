@@ -18,17 +18,19 @@ package org.apache.flink
 import api.common.ExecutionConfig
 import api.common.typeinfo.TypeInformation
 import api.scala._
+import api.scala.typeutils._
 import core.memory._
 
-import org.scalacheck.Shapeless._
+import com.Ostermiller.util.CircularByteBuffer
+
 import org.scalacheck._
+import org.scalacheck.Shapeless._
 import org.scalatest._
 import org.scalatest.prop.PropertyChecks
-import resource._
 
+import scala.reflect.ClassTag
 import scala.util._
 
-import java.io._
 import java.math
 import java.time.DayOfWeek
 import java.util.Date
@@ -39,37 +41,35 @@ class TypeInfoTest extends FreeSpec with Matchers with PropertyChecks {
   import Arbitraries._
   import Implicits._
 
+  val buffer = new CircularByteBuffer(CircularByteBuffer.INFINITE_SIZE, false)
   val config = new ExecutionConfig
 
-  def test[R: Arbitrary](implicit info: TypeInformation[R]) = {
-    // Test `.toString` (no StackOverflow).
-    println(s"Testing $info")
-
+  def test[R: Arbitrary](implicit info: TypeInformation[R], tag: ClassTag[R]) = {
+    println(s"[info] Testing $info")
     // Test property consistency.
+    val clazz = tag.runtimeClass
+    info.getTypeClass.isAssignableFrom(clazz) || clazz.isPrimitive shouldBe true
     info.isBasicType && info.isTupleType shouldBe false
     info.isSortKeyType && !info.isKeyType shouldBe false
     info.getArity should be >= 0
     info.getTotalFields should be >= 0
-
     val serializer = info.createSerializer(config)
     serializer.duplicate shouldEqual serializer
-
-    // Test copy, serialization and deserialization idempotency.
-    forAll { record: R =>
+    try for { // Test copy, serialization and deserialization idempotency.
+      input  <- resource.managed(new DataInputViewStreamWrapper(buffer.getInputStream))
+      output <- resource.managed(new DataOutputViewStreamWrapper(buffer.getOutputStream))
+    } forAll { record: R =>
       serializer.copy(record) shouldEqual record
-
-      for {
-        outStream <- managed(new ByteArrayOutputStream)
-        outView   <- managed(new DataOutputViewStreamWrapper(outStream))
-        _ = serializer.serialize(record, outView)
-        inStream  <- managed(new ByteArrayInputStream(outStream.toByteArray))
-        inView    <- managed(new DataInputViewStreamWrapper(inStream))
-      } serializer.deserialize(inView) shouldEqual record
-    }
+      serializer.serialize(record, output)
+      serializer.deserialize(input) shouldEqual record
+      serializer.serialize(record, output)
+      serializer.copy(input, output)
+      serializer.deserialize(input) shouldEqual record
+    } finally buffer.clear()
   }
 
-  "Deriving TypeInformation for" - {
-    "Boxed Java primitives" in {
+  "Testing TypeInformation for" - {
+    "Java primitives" in {
       test [boxed.Boolean]
       test [boxed.Byte]
       test [boxed.Short]
@@ -127,7 +127,7 @@ class TypeInfoTest extends FreeSpec with Matchers with PropertyChecks {
       test [Failure[BigInt]]
     }
 
-    "Java boxed arrays" in {
+    "Java primitive arrays" in {
       test [Array[boxed.Boolean]]
       test [Array[boxed.Byte]]
       test [Array[boxed.Short]]
@@ -150,11 +150,8 @@ class TypeInfoTest extends FreeSpec with Matchers with PropertyChecks {
       test [Array[String]]
     }
 
-    "Generic arrays" in {
-      test [Array[DayOfWeek]]
-    }
-
     "Traversables" in {
+      test [Array[DayOfWeek]]
       test [Seq[BigDecimal]]
       test [List[WeekDay.Value]]
       test [Set[Option[Unit]]]
@@ -164,6 +161,10 @@ class TypeInfoTest extends FreeSpec with Matchers with PropertyChecks {
     }
 
     "Case classes" in {
+      // Recursive vs non-recursive.
+      typeInfo [Account] shouldBe a [CaseClassTypeInfo[_]]
+      typeInfo [Tree[Account]] shouldBe a [ProductTypeInfo[_]]
+
       test [(Double, Char)]
       test [Nil.type]
       test [Account]

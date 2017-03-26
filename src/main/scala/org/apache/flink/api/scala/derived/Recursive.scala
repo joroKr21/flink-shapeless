@@ -22,7 +22,7 @@ import scala.annotation.implicitNotFound
 
 /** Type class witnessing that [[T]] is a recursive Algebraic Data Type (ADT). */
 @implicitNotFound("could not prove that ${T} is a Recursive data type")
-trait Recursive[T]
+trait Recursive[T] extends Serializable
 
 /** Implicit [[Recursive]] instances. */
 object Recursive {

@@ -16,8 +16,4 @@
 package org.apache.flink
 package api.scala
 
-import api.scala.derived._
-
-object Implicits
-  extends TypeInfoInstances
-  with DerivedInstances
+object Implicits extends typeinfo.Instances

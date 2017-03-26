@@ -27,9 +27,7 @@ import scala.annotation.implicitNotFound
  * but lazy and more efficient.
  */
 @implicitNotFound("could not lift TypeInformation to type ${A}")
-trait TypeInfos[A] extends DepFn0 with (() => Stream[TypeInformation[_]]) {
-  type Out = Stream[TypeInformation[_]]
-}
+trait TypeInfos[A] extends (() => Stream[TypeInformation[_]]) with Serializable
 
 /** [[TypeInfos]] instances. */
 object TypeInfos {

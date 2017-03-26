@@ -14,44 +14,39 @@
  * limitations under the License.
  */
 package org.apache.flink
-package api.scala.derived
+package api.scala.typeinfo
 
 import api.common.ExecutionConfig
 import api.common.typeinfo._
 import api.java.typeutils._
+import api.scala.derived.MkTypeInfo
 import api.scala.typeutils._
-import types.Value
 
+import types.Value
 import shapeless._
 
-import scala.Function.const
 import scala.collection.generic.CanBuildFrom
-import scala.language.higherKinds
 import scala.reflect.ClassTag
 import scala.util.Try
 
-import java.{lang => boxed}
 import java.math
 import java.util.Date
+import java.{lang => boxed}
 
 /** Implicit [[TypeInformation]] instance. */
-trait TypeInfoInstances extends BasicTypeInfoInstances {
+trait Instances extends Instances0_Basic {
 
   /** Summons an implicit [[TypeInformation]] instance in scope. */
   def typeInfo[A: TypeInfo]: TypeInfo[A] = implicitly
 
-  /** Creates [[TypeInformation]] for type [[B]] based on isomorphism with type [[A]]. */
-  def isoTypeInfo[A: TypeInfo, B: ClassTag](from: A => B, to: B => A): TypeInfo[B] =
-    IsomorphicTypeInfo[A, B](implicitly)(from, to)
-
   // Shadow the default macro based TypeInformation providers.
-  def createTypeInformation = ???
-  def createTuple2TypeInformation = ???
-  def scalaNothingTypeInfo = ???
+  def createTypeInformation: Nothing = ???
+  def createTuple2TypeInformation: Nothing = ???
+  def scalaNothingTypeInfo: Nothing = ???
 }
 
 /** Basic (primitive) [[TypeInformation]] instances. */
-trait BasicTypeInfoInstances extends EnumTypeInfoInstances {
+trait Instances0_Basic extends Instances1_Enum {
   import BasicTypeInfo._
 
   // Boxed Java primitives
@@ -84,21 +79,21 @@ trait BasicTypeInfoInstances extends EnumTypeInfoInstances {
   // Isomorphisms
 
   implicit val nullTypeInfo: TypeInfo[Null] =
-    IsomorphicTypeInfo(unitTypeInfo)(const(null), const(()))
+    isoTypeInfo[Unit, Null](_ => null, _ => ())
 
   implicit val symbolTypeInfo: TypeInfo[Symbol] =
-    IsomorphicTypeInfo(stringTypeInfo)(Symbol.apply, _.name)
+    isoTypeInfo[String, Symbol](Symbol.apply, _.name)
 
   implicit val bigIntTypeInfo: TypeInfo[BigInt] =
-    IsomorphicTypeInfo(javaBigIntTypeInfo)(BigInt.apply, _.bigInteger)
+    isoTypeInfo[math.BigInteger, BigInt](BigInt.apply, _.bigInteger)
 
   implicit val bigDecTypeInfo: TypeInfo[BigDecimal] =
-    IsomorphicTypeInfo(javaBigDecTypeInfo)(BigDecimal.apply, _.bigDecimal)
+    isoTypeInfo[math.BigDecimal, BigDecimal](BigDecimal.apply, _.bigDecimal)
 }
 
 /** [[TypeInformation]] instances for Java and Scala enumerations. */
-trait EnumTypeInfoInstances extends OptionTypeInfoInstances {
-  implicit def enumTypeInfo[E <: boxed.Enum[E]: ClassTag]: TypeInfo[E] =
+trait Instances1_Enum extends Instances2_Option {
+  implicit def enumTypeInfo[E <: Enum[E]: ClassTag]: TypeInfo[E] =
     new EnumTypeInfo(classFor)
 
   implicit def enumValueTypeInfo[E <: Enumeration](
@@ -107,7 +102,7 @@ trait EnumTypeInfoInstances extends OptionTypeInfoInstances {
 }
 
 /** [[TypeInformation]] instances for [[Option]] and subclasses. */
-trait OptionTypeInfoInstances extends EitherTypeInfoInstances {
+trait Instances2_Option extends Instances3_Either {
   implicit val noneTypeInfo: TypeInfo[None.type] =
     new OptionTypeInfo[Nothing, None.type](new ScalaNothingTypeInfo)
 
@@ -116,7 +111,7 @@ trait OptionTypeInfoInstances extends EitherTypeInfoInstances {
 }
 
 /** [[TypeInformation]] instances for [[Either]] and subclasses. */
-trait EitherTypeInfoInstances extends TryTypeInfoInstances {
+trait Instances3_Either extends Instances4_Try {
   implicit def eitherTypeInfo[
     E[l, r] <: Either[l, r], L: TypeInfo, R: TypeInfo
   ](implicit tag: ClassTag[E[L, R]]): TypeInfo[E[L, R]] =
@@ -124,13 +119,13 @@ trait EitherTypeInfoInstances extends TryTypeInfoInstances {
 }
 
 /** [[TypeInformation]] instances for [[Try]] and subclasses. */
-trait TryTypeInfoInstances extends BasicArrayTypeInfoInstances {
+trait Instances4_Try extends Instances5_Array {
   implicit def tryTypeInfo[T[a] <: Try[a], A: TypeInfo]: TypeInfo[T[A]] =
     new TryTypeInfo[A, T[A]](implicitly)
 }
 
 /** [[TypeInformation]] instances for basic (primitive) arrays. */
-trait BasicArrayTypeInfoInstances extends GenericArrayTypeInfoInstances {
+trait Instances5_Array extends Instances6_Traversable {
   import BasicArrayTypeInfo._
   import PrimitiveArrayTypeInfo._
 
@@ -156,20 +151,18 @@ trait BasicArrayTypeInfoInstances extends GenericArrayTypeInfoInstances {
   implicit val stringArrayTypeInfo:   TypeInfo[Array[String]]   = STRING_ARRAY_TYPE_INFO
 }
 
-/** [[TypeInformation]] instances for generic arrays. */
-trait GenericArrayTypeInfoInstances extends TraversableTypeInfoInstances {
+/** [[TypeInformation]] instances for [[Array]], [[Traversable]] and [[Map]]. */
+trait Instances6_Traversable extends Instances7_Value {
   implicit def arrayTypeInfo[E](implicit element: TypeInfo[E]): TypeInfo[Array[E]] =
     ObjectArrayTypeInfo.getInfoFor(element)
-}
 
-/** [[TypeInformation]] instances for [[Traversable]] and [[Map]]. */
-trait TraversableTypeInfoInstances extends ValueTypeInfoInstances {
   implicit def traversableTypeInfo[T[e] <: TraversableOnce[e], E: TypeInfo](
     implicit tag: ClassTag[T[E]], factory: CanBuildFrom[T[E], E, T[E]]
   ): TypeInfo[T[E]] = new TraversableTypeInfo[T[E], E](classFor, implicitly) {
     def createSerializer(config: ExecutionConfig) =
       new TraversableSerializer[T[E], E](elementTypeInfo.createSerializer(config)) {
         def getCbf = factory
+        override def toString = s"TraversableSerializer[$elementSerializer]"
       }
   }
 
@@ -182,20 +175,58 @@ trait TraversableTypeInfoInstances extends ValueTypeInfoInstances {
     def createSerializer(config: ExecutionConfig) =
       new TraversableSerializer[M[K, V], (K, V)](kv.createSerializer(config)) {
         def getCbf = factory
+        override def toString = s"TraversableSerializer[$elementSerializer]"
       }
   }
 }
 
 /** [[TypeInformation]] instances for [[Value]] types. */
-trait ValueTypeInfoInstances extends DefaultTypeInfoInstances {
+trait Instances7_Value extends Instances8_Singleton {
   implicit def valueTypeInfo[V <: Value: ClassTag]: TypeInfo[V] =
     new ValueTypeInfo(classFor)
 }
 
+/** [[TypeInformation]] instances for [[Singleton]] objects. */
+trait Instances8_Singleton extends Instances9_Derived {
+  implicit def singletonTypeInfo[S: ClassTag](
+    implicit singleton: Witness.Aux[S]
+  ): TypeInfo[S] = isoTypeInfo[Unit, S](
+    _ => singleton.value, _ => ()
+  )(new UnitTypeInfo, implicitly)
+}
+
+/** Automatically derived [[TypeInformation]] instances. */
+trait Instances9_Derived extends InstancesZ {
+
+  /**
+   * If type [[A]] is a (possibly recursive) Algebraic Data Type (ADT), automatically derives a
+   * [[TypeInformation]] instance for it.
+   *
+   * Other implicit instances in scope take higher priority except those provided by
+   * [[api.scala.createTypeInformation]] (the macro based approach), because it has a default
+   * catch-all case based on runtime reflection.
+   *
+   * @param lp Evidence that no other implicit instance of `TypeInformation[A]` is in scope.
+   * @param mk The derived [[TypeInformation]] provider ([[Strict]] helps avoid divergence).
+   * @tparam A A (possibly recursive) Algebraic Data Type (ADT).
+   * @return The derived [[TypeInformation]] instance.
+   */
+  // Derive only when no other implicit instance is in scope.
+  implicit def derivedTypeInfo[A](
+    implicit
+    lp: LowPriority.Ignoring[Witness.`"createTypeInformation"`.T],
+    mk: Strict[MkTypeInfo[A]]
+  ): TypeInfo[A] = mk.value.instance
+}
+
 /** Lowest priority [[TypeInformation]] instances. */
-trait DefaultTypeInfoInstances {
+trait InstancesZ {
   type TypeInfo[T] = TypeInformation[T]
 
   protected def classFor[A](implicit tag: ClassTag[A]): Class[A] =
     tag.runtimeClass.asInstanceOf[Class[A]]
+
+  /** Creates [[TypeInformation]] for type [[B]] based on isomorphism with type [[A]]. */
+  def isoTypeInfo[A: TypeInfo, B: ClassTag](from: A => B, to: B => A): TypeInfo[B] =
+    IsomorphicTypeInfo[A, B](implicitly)(from, to)
 }

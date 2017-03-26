@@ -29,17 +29,17 @@ import scala.reflect.ClassTag
 
 /** An automatically derived [[TypeInformation]] provider. */
 @implicitNotFound("could not automatically derive TypeInformation[${A}]")
-trait MkTypeInfo[A] extends (() => TypeInformation[A])
+class MkTypeInfo[A](val instance: TypeInformation[A]) extends AnyVal
 
 /** Implicit [[MkTypeInfo]] instances. */
-object MkTypeInfo extends MkTypeInfoADTs {
+object MkTypeInfo extends MkTypeInfo0_ADT {
 
   /** Summons an implicit [[MkTypeInfo]] instance in scope. */
   def apply[A: MkTypeInfo]: MkTypeInfo[A] = implicitly
 }
 
 /** [[MkTypeInfo]] instances for (possibly recursive) Algebraic Data Types (ADTs). */
-trait MkTypeInfoADTs extends MkTypeInfoCCs {
+trait MkTypeInfo0_ADT extends MkTypeInfo1_CaseClass {
   implicit def product[P <: Product: Recursive: ClassTag, R <: HList](
     implicit
     gen: Generic.Aux[P, R],
@@ -64,7 +64,7 @@ trait MkTypeInfoADTs extends MkTypeInfoCCs {
 }
 
 /** [[MkTypeInfo]] instances for non-recursive case classes. */
-trait MkTypeInfoCCs extends MkTypeInfoLP {
+trait MkTypeInfo1_CaseClass extends MkTypeInfoZ {
   implicit def caseClass[P <: Product, R <: HList, K <: HList, V <: HList, T <: HList](
     implicit
     tag: ClassTag[P],
@@ -79,17 +79,22 @@ trait MkTypeInfoCCs extends MkTypeInfoLP {
     val names = for (k <- vector(unzip.keys)) yield k.name
     val fields = array(infos.instances)
     new CaseClassTypeInfo[P](clazz, Array.empty, fields, names) {
-      def createSerializer(config: ExecutionConfig) =
-        new CaseClassSerializer[P](clazz, for (f <- fields) yield f.createSerializer(config)) {
+      def createSerializer(config: ExecutionConfig) = {
+        val serializers = for (f <- fields) yield f.createSerializer(config)
+        new CaseClassSerializer[P](clazz, serializers) {
           def createInstance(fields: Array[AnyRef]) =
             gen.from(record(fields.foldRight[HList](HNil)(_ :: _).asInstanceOf[V]))
+          override def toString = s"CaseClassSerializer(${
+            names.indices.map(i => s"${names(i)}: ${serializers(i)}").mkString(", ")
+          })"
         }
+      }
     }
   }
 }
 
 /** Lowest priority [[MkTypeInfo]] instances. */
-trait MkTypeInfoLP {
-  protected def mk[A](info: => TypeInformation[A]): MkTypeInfo[A] =
-    new MkTypeInfo[A] { def apply = info }
+trait MkTypeInfoZ {
+  protected def mk[A](instance: TypeInformation[A]): MkTypeInfo[A] =
+    new MkTypeInfo[A](instance)
 }

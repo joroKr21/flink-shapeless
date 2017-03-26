@@ -22,9 +22,7 @@ import scala.annotation.implicitNotFound
 
 /** Type class for tagging the coproduct type [[C]] with an integer index. */
 @implicitNotFound("could not derive an indexing function for type ${C}")
-trait Which[C <: Coproduct] extends DepFn1[C] with (C => Int) {
-  type Out = Int
-}
+trait Which[C <: Coproduct] extends (C => Int) with Serializable
 
 /** [[Which]] instances. */
 object Which {

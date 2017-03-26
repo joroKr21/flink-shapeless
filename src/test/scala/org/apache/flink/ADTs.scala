@@ -31,7 +31,9 @@ object ADTs {
   case class Account(name: String, money: BigInt)
 
   /** Recursive product. */
-  case class Tree[+A](value: A, children: List[Tree[A]])
+  case class Tree[@specialized(Int) +E](value: E, children: List[Tree[E]]) {
+    def size: Int = 1 + children.foldLeft(0)(_ + _.size)
+  }
 
   /** Non-recursive coproduct. */
   sealed trait Fruit
@@ -39,9 +41,13 @@ object ADTs {
   case class Banana(ripe: Boolean) extends Fruit
 
   /** Recursive coproduct. */
-  sealed trait BTree[+A]
-  case object BLeaf extends BTree[Nothing]
-  case class BNode[+A](left: BTree[A], value: A, right: BTree[A]) extends BTree[A]
+  sealed trait BTree[@specialized(Int) +E] { def size: Int }
+  case object BLeaf extends BTree[Nothing] { def size = 0 }
+  case class BNode[@specialized(Int) +E](
+    left: BTree[E], value: E, right: BTree[E]
+  ) extends BTree[E] {
+    def size = 1 + left.size + right.size
+  }
 
   /** Has a custom non-orphan [[TypeInformation]] instance. */
   case class Foo(x: Int)

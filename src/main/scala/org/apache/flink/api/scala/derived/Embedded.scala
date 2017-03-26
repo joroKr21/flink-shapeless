@@ -19,14 +19,13 @@ package api.scala.derived
 import shapeless._
 
 import scala.annotation.implicitNotFound
-import scala.language.higherKinds
 
 /** Type class witnessing that type [[E]] is embedded in type [[T]]. */
 @implicitNotFound("could not prove that type ${E} is embedded in type ${T}")
-trait Embedded[T, E]
+trait Embedded[T, E] extends Serializable
 
 /** Implicit [[Embedded]] instances. */
-object Embedded extends EmbeddedADTs {
+object Embedded extends Embedded0_Head {
 
   /** Summons an implicit [[Embedded]] instance in scope. */
   def apply[T, E](implicit emb: Embedded[T, E]): Embedded[T, E] = emb
@@ -34,6 +33,14 @@ object Embedded extends EmbeddedADTs {
   /** The default case. */
   implicit def reflexive[T]: Embedded[T, T] = instance
 
+  /** Algebraic data types. */
+  implicit def adt[A, R, E](
+    implicit gen: Generic.Aux[A, R], repr: Embedded[R, E]
+  ): Embedded[A, E] = instance
+}
+
+/** [[Embedded]] instances for product and coproduct head. */
+trait Embedded0_Head extends Embedded1_Tail {
   implicit def hhead[H, T <: HList, E](
     implicit head: Strict[Embedded[H, E]]
   ): Embedded[H :: T, E] = instance
@@ -43,8 +50,8 @@ object Embedded extends EmbeddedADTs {
   ): Embedded[H :+: T, E] = instance
 }
 
-/** [[Embedded]] instances for Algebraic Data Types (ADTs). */
-trait EmbeddedADTs extends EmbeddedHKTs {
+/** [[Embedded]] instances for product and coproduct tail. */
+trait Embedded1_Tail extends Embedded3_HKT {
   implicit def htail[H, T <: HList, E](
     implicit tail: Embedded[T, E]
   ): Embedded[H :: T, E] = instance
@@ -52,14 +59,10 @@ trait EmbeddedADTs extends EmbeddedHKTs {
   implicit def ctail[H, T <: Coproduct, E](
     implicit tail: Embedded[T, E]
   ): Embedded[H :+: T, E] = instance
-
-  implicit def adt[A, R, E](
-    implicit gen: Generic.Aux[A, R], repr: Embedded[R, E]
-  ): Embedded[A, E] = instance
 }
 
 /** [[Embedded]] instances for higher kinded types (HKTs). */
-trait EmbeddedHKTs extends EmbeddedLP {
+trait Embedded3_HKT extends EmbeddedZ {
   implicit def kind1[F[_], A, E](
     implicit lp: LowPriority, a: Embedded[A, E]
   ): Embedded[F[A], E] = instance
@@ -86,7 +89,7 @@ trait EmbeddedHKTs extends EmbeddedLP {
 }
 
 /** Lowest priority [[Embedded]] instances. */
-trait EmbeddedLP {
+trait EmbeddedZ {
   // Since this type class has no methods, a singleton instance suffices.
   private val singleton: Embedded[_, _] = new Embedded[Any, Any] { }
   protected def instance[T, E]: Embedded[T, E] = singleton.asInstanceOf[Embedded[T, E]]
