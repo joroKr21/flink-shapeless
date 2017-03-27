@@ -37,8 +37,7 @@ import java.util.Date
 import java.{lang => boxed}
 
 class TypeInfoTest extends FreeSpec with Matchers with PropertyChecks {
-  import ADTs._
-  import Arbitraries._
+  import ADTsTest._
   import Implicits._
 
   val buffer = new CircularByteBuffer(CircularByteBuffer.INFINITE_SIZE, false)

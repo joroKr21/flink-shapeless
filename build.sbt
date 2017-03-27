@@ -35,7 +35,6 @@ lazy val testDependencies = Seq(
 
 lazy val benchDependencies = Seq(
   "com.storm-enroute" %% "scalameter" % "0.8.2"
-    exclude ("com.fasterxml.jackson.core", "jackson-databind")
 ).map(_ % "bench")
 
 lazy val commonSettings = Seq(

@@ -1,3 +1,18 @@
+/*
+ * Copyright 2017 Georgi Krastev
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.flink
 
 import api.common.ExecutionConfig
@@ -14,44 +29,36 @@ import org.scalameter.picklers.Implicits._
 import java.io._
 
 object TypeInfoBench extends Bench.OfflineReport {
-  import ADTs._
-  import Arbitraries._
-
-  override def executor = LocalExecutor(warmer, aggregator, measurer)
-  override def persistor = SerializationPersistor()
+  import ADTsBench._
 
   val config = new ExecutionConfig
   val sizes  = for {
-    n <- Gen.range("Number of records")(100, 500, 100)
-    s <- Gen.enumeration("Record size")(50, 100)
+    n <- Gen.range("# Trees")(100, 500, 100)
+    s <- Gen.enumeration("# Nodes")(50, 100)
   } yield (n, s)
 
-  def bench[R](implicit arb: Arbitrary[R], info: TypeInformation[R]) = {
-    val tpe = info.getTypeClass.getSimpleName
+  def bench[R](n: Int, s: Int)(implicit arb: Arbitrary[R], info: TypeInformation[R]) = {
     val serializer = info.createSerializer(config)
-    println(s"[info] Benchmarking $serializer")
-    using(sizes) curve tpe in { case (n, s) =>
-      val data = listOfN(n, resize(s, arb.arbitrary))
-        .pureApply(Parameters.default, Seed.random)
+    val data = listOfN(n, resize(s, arb.arbitrary))
+      .pureApply(Parameters.default, Seed.random)
 
-      for { // Serialize all records to a byte array and read them back.
-        os <- resource.managed(new ByteArrayOutputStream)
-        ov <- resource.managed(new DataOutputViewStreamWrapper(os))
-        _ = for (record <- data) serializer.serialize(record, ov)
-        is <- resource.managed(new ByteArrayInputStream(os.toByteArray))
-        iv <- resource.managed(new DataInputViewStreamWrapper(is))
-      } for (_ <- 1 to n) serializer.deserialize(iv)
-    }
+    for { // Serialize all records to a byte array and read them back.
+      os <- resource.managed(new ByteArrayOutputStream)
+      ov <- resource.managed(new DataOutputViewStreamWrapper(os))
+      _ = for (record <- data) serializer.serialize(record, ov)
+      is <- resource.managed(new ByteArrayInputStream(os.toByteArray))
+      iv <- resource.managed(new DataInputViewStreamWrapper(is))
+    } for (_ <- 1 to n) serializer.deserialize(iv)
   }
 
   performance of "derived TypeSerializer" in {
     import Implicits._
-    bench [Tree[Int]]
-    bench [BTree[Int]]
+    using (sizes) curve "NTree" in (bench [NTree[Int]] _).tupled
+    using (sizes) curve "BTree" in (bench [BTree[Int]] _).tupled
   }
 
   performance of "default TypeSerializer" in {
-    bench [Tree[Int]]
-    bench [BTree[Int]]
+    using (sizes) curve "NTree" in (bench [NTree[Int]] _).tupled
+    using (sizes) curve "BTree" in (bench [BTree[Int]] _).tupled
   }
 }

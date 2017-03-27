@@ -15,6 +15,8 @@
  */
 package org.apache.flink
 
+import api.common.typeinfo.TypeInformation
+
 import org.scalacheck._
 
 import scala.util._
@@ -22,11 +24,39 @@ import scala.util._
 import java.{lang => boxed}
 import java.math
 
-/** Missing [[Arbitrary]] definitions. */
-object Arbitraries {
+/** Data definitions. Must be separate due to SI-7046. */
+object ADTsTest {
   import Arbitrary.{arbitrary => arb}
-  import ADTs._
   import Gen._
+
+  /** [[Exception]] with structural equality. */
+  case class Err(msg: String) extends Exception(msg)
+
+  object WeekDay extends Enumeration {
+    val Mon, Tue, Wed, Thu, Fri, Sat, Sun = Value
+  }
+
+  /** Non-recursive product */
+  case class Account(name: String, money: BigInt)
+
+  /** Recursive product. */
+  case class Tree[+E](value: E, children: List[Tree[E]])
+
+  /** Non-recursive coproduct. */
+  sealed trait Fruit
+  case class Apple(color: (Int, Int, Int)) extends Fruit
+  case class Banana(ripe: Boolean) extends Fruit
+
+  /** Recursive coproduct. */
+  sealed trait BTree[+E]
+  case object BLeaf extends BTree[Nothing] { def size = 0 }
+  case class BNode[+E](left: BTree[E], value: E, right: BTree[E]) extends BTree[E]
+
+  /** Has a custom non-orphan [[TypeInformation]] instance. */
+  case class Foo(x: Int)
+  object Foo {
+    implicit val info: TypeInformation[Foo] = null
+  }
 
   // Arbitrary Java primitives
   implicit val arbNull:         Arbitrary[Null]            = Arbitrary(const(null))
@@ -52,32 +82,4 @@ object Arbitraries {
   /** [[Try]] with structural equality. */
   implicit def arbTry[A: Arbitrary]: Arbitrary[Try[A]] =
     Arbitrary(oneOf(arb[A].map(Success.apply), arb[Throwable].map(Failure.apply)))
-
-  /** Reasonably sized [[Arbitrary]] [[Tree]]s. */
-  implicit def arbTree[E: Arbitrary]: Arbitrary[Tree[E]] = {
-    lazy val tree: Gen[Tree[E]] = lzy(sized {
-      size => for {
-        element <- arb[E]
-        children <- if (size <= 1) const(Nil) else for {
-          n <- choose(0, size - 1)
-          h <- resize(size % (n + 1), tree)
-          t <- listOfN(n, resize(size / (n + 1), tree))
-        } yield h :: t
-      } yield Tree(element, children)
-    })
-    Arbitrary(tree)
-  }
-
-  /** Reasonably sized [[Arbitrary]] [[BTree]]s. */
-  implicit def arbBTree[E: Arbitrary]: Arbitrary[BTree[E]] = {
-    lazy val tree: Gen[BTree[E]] = lzy(sized { size =>
-      if (size == 0) BLeaf else for {
-        e <- arb[E]
-        n <- choose(1, size)
-        l <- resize(n - 1, tree)
-        r <- resize(size - n, tree)
-      } yield BNode(l, e, r)
-    })
-    Arbitrary(tree)
-  }
 }
