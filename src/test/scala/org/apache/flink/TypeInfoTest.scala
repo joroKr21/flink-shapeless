@@ -180,5 +180,10 @@ class TypeInfoTest extends FreeSpec with Matchers with PropertyChecks {
       a [NullPointerException] should be thrownBy test [List[Foo]]
       a [NullPointerException] should be thrownBy test [(Foo, Long)]
     }
+
+    "Unknown" in {
+      "typeInfo[scala.concurrent.Future[String]]" shouldNot typeCheck
+      "typeInfo[java.lang.Exception]" shouldNot typeCheck
+    }
   }
 }
