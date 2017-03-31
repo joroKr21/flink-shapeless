@@ -23,6 +23,7 @@ import core.memory._
 
 import com.Ostermiller.util.CircularByteBuffer
 
+import org.apache.commons.lang.SerializationUtils
 import org.scalacheck._
 import org.scalacheck.Shapeless._
 import org.scalatest._
@@ -52,6 +53,7 @@ class TypeInfoTest extends FreeSpec with Matchers with PropertyChecks {
     info.isSortKeyType && !info.isKeyType shouldBe false
     info.getArity should be >= 0
     info.getTotalFields should be >= 0
+    SerializationUtils.serialize(info) should not be empty
     val serializer = info.createSerializer(config)
     serializer.duplicate shouldEqual serializer
     try for { // Test copy, serialization and deserialization idempotency.

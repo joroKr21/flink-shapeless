@@ -21,52 +21,50 @@ import core.memory.DataInputView
 import core.memory.DataOutputView
 
 /** A [[TypeSerializer]] for recursive product types (case classes). */
-case class ProductSerializer[P](fields: Stream[TypeSerializer[Any]])
+case class ProductSerializer[P](var fields: Seq[TypeSerializer[Any]] = Seq.empty)
     (from: Seq[Any] => P, to: P => Seq[Any])
     extends TypeSerializer[P] with InductiveObject {
 
-  // Head is `null` to work around strictness.
-  private def fs = fields.tail
-
-  lazy val isImmutableType =
-    inductive(true)(fs.forall(_.isImmutableType))
+  def isImmutableType = inductive(true) {
+    fields.forall(_.isImmutableType)
+  }
 
   lazy val getLength = inductive(-1) {
-    if (fs.exists(_.getLength <= 0)) -1
-    else fs.map(_.getLength).sum
+    if (fields.exists(_.getLength <= 0)) -1
+    else fields.map(_.getLength).sum
   }
 
   def duplicate = inductive(this) {
-    ProductSerializer(fields.map { f =>
-      if (f == null) null else f.duplicate
-    }.force)(from, to)
+    val serializer = ProductSerializer()(from, to)
+    serializer.fields = for (f <- fields) yield f.duplicate
+    serializer
   }
 
   def createInstance =
-    from(for (f <- fs) yield f.createInstance)
+    from(for (f <- fields) yield f.createInstance)
 
   def copy(record: P, reuse: P) =
     copy(record)
 
   def copy(record: P) =
-    from(for ((f, v) <- fs zip to(record)) yield f.copy(v))
+    from(for ((f, v) <- fields zip to(record)) yield f.copy(v))
 
   def copy(source: DataInputView, target: DataOutputView) =
-    for (f <- fs) f.copy(source, target)
+    for (f <- fields) f.copy(source, target)
 
   def serialize(record: P, target: DataOutputView) =
-    for ((f, v) <- fs zip to(record)) f.serialize(v, target)
+    for ((f, v) <- fields zip to(record)) f.serialize(v, target)
 
   def deserialize(reuse: P, source: DataInputView) =
     deserialize(source)
 
   def deserialize(source: DataInputView) =
-    from(for (f <- fs) yield f.deserialize(source))
+    from(for (f <- fields) yield f.deserialize(source))
 
-  override lazy val hashCode =
+  override def hashCode =
     inductive(0)(31 * fields.##)
 
   override def toString = inductive("this") {
-    s"ProductSerializer(${fs.mkString(", ")})"
+    s"ProductSerializer(${fields.mkString(", ")})"
   }
 }

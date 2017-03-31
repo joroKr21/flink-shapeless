@@ -23,33 +23,33 @@ import shapeless._
 import scala.annotation.implicitNotFound
 
 /**
- * Equivalent to `ToTraversable.Aux[LiftAll[TypeInformation, A]#Out, Stream, TypeInformation[_]]`,
+ * Equivalent to `ToList[LiftAll[TypeInformation, A], TypeInformation[_]]`,
  * but lazy and more efficient.
  */
 @implicitNotFound("could not lift TypeInformation to type ${A}")
-trait TypeInfos[A] extends (() => Stream[TypeInformation[_]]) with Serializable
+trait TypeInfos[A] extends (() => List[TypeInformation[_]]) with Serializable
 
 /** [[TypeInfos]] instances. */
 object TypeInfos {
   def apply[A: TypeInfos]: TypeInfos[A] = implicitly
 
   implicit val hnil: TypeInfos[HNil] = new TypeInfos[HNil] {
-    def apply = Stream.empty
+    def apply = Nil
   }
 
   implicit val cnil: TypeInfos[CNil] = new TypeInfos[CNil] {
-    def apply = Stream.empty
+    def apply = Nil
   }
 
   implicit def hcons[H, T <: HList](
     implicit head: Lazy[TypeInformation[H]], tail: TypeInfos[T]
   ): TypeInfos[H :: T] = new TypeInfos[H :: T] {
-    def apply = head.value #:: tail()
+    def apply = head.value :: tail()
   }
 
   implicit def ccons[H, T <: Coproduct](
     implicit head: Lazy[TypeInformation[H]], tail: TypeInfos[T]
   ): TypeInfos[H :+: T] = new TypeInfos[H :+: T] {
-    def apply = head.value #:: tail()
+    def apply = head.value :: tail()
   }
 }

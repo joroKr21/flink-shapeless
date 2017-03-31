@@ -21,11 +21,11 @@ import api.common.typeinfo._
 import api.java.typeutils._
 import api.scala.derived.MkTypeInfo
 import api.scala.typeutils._
-
 import types.Value
+
 import shapeless._
 
-import scala.collection.generic.CanBuildFrom
+import scala.collection.generic._
 import scala.reflect.ClassTag
 import scala.util.Try
 
@@ -156,28 +156,32 @@ trait Instances6_Traversable extends Instances7_Value {
   implicit def arrayTypeInfo[E](implicit element: TypeInfo[E]): TypeInfo[Array[E]] =
     ObjectArrayTypeInfo.getInfoFor(element)
 
-  implicit def traversableTypeInfo[T[e] <: TraversableOnce[e], E: TypeInfo](
-    implicit tag: ClassTag[T[E]], factory: CanBuildFrom[T[E], E, T[E]]
+  implicit def traversableTypeInfo[
+    T[e] <: Traversable[e], E: TypeInfo
+  ](implicit
+    tag: ClassTag[T[E]],
+    cbf: CanBuild[E, T[E]],
+    ev: T[E] <:< GenericTraversableTemplate[E, T]
   ): TypeInfo[T[E]] = new TraversableTypeInfo[T[E], E](classFor, implicitly) {
+    val empty = cbf().result()
     def createSerializer(config: ExecutionConfig) =
       new TraversableSerializer[T[E], E](elementTypeInfo.createSerializer(config)) {
-        def getCbf = factory
         override def toString = s"TraversableSerializer[$elementSerializer]"
+        def getCbf = new CanBuildFrom[T[E], E, T[E]] {
+          def apply(from: T[E]) = (from: GenericTraversableTemplate[E, T]).genericBuilder
+          def apply() = apply(empty)
+        }
       }
   }
 
-  implicit def mapTypeInfo[M[k, v] <: Map[k, v], K, V](
-    implicit
-    kv: TypeInfo[(K, V)],
-    tag: ClassTag[M[K, V]],
-    factory: CanBuildFrom[M[K, V], (K, V), M[K, V]]
-  ): TypeInfo[M[K, V]] = new TraversableTypeInfo[M[K, V], (K, V)](classFor, kv) {
-    def createSerializer(config: ExecutionConfig) =
-      new TraversableSerializer[M[K, V], (K, V)](kv.createSerializer(config)) {
-        def getCbf = factory
-        override def toString = s"TraversableSerializer[$elementSerializer]"
-      }
-  }
+  implicit def mapTypeInfo[K, V](implicit kv: TypeInfo[(K, V)]): TypeInfo[Map[K, V]] =
+    new TraversableTypeInfo[Map[K, V], (K, V)](classOf, kv) {
+      def createSerializer(config: ExecutionConfig) =
+        new TraversableSerializer[Map[K, V], (K, V)](kv.createSerializer(config)) {
+          def getCbf = Map.canBuildFrom
+          override def toString = s"TraversableSerializer[$elementSerializer]"
+        }
+    }
 }
 
 /** [[TypeInformation]] instances for [[Value]] types. */
@@ -216,7 +220,7 @@ trait Instances9_Derived extends InstancesZ {
     implicit
     lp: LowPriority.Ignoring[Witness.`"createTypeInformation"`.T],
     mk: Strict[MkTypeInfo[A]]
-  ): TypeInfo[A] = mk.value.instance
+  ): TypeInfo[A] = mk.value()
 }
 
 /** Lowest priority [[TypeInformation]] instances. */

@@ -29,7 +29,7 @@ import scala.reflect.ClassTag
 
 /** An automatically derived [[TypeInformation]] provider. */
 @implicitNotFound("could not automatically derive TypeInformation[${A}]")
-class MkTypeInfo[A](val instance: TypeInformation[A]) extends AnyVal
+trait MkTypeInfo[A] extends (() => TypeInformation[A])
 
 /** Implicit [[MkTypeInfo]] instances. */
 object MkTypeInfo extends MkTypeInfo0_ADT {
@@ -40,26 +40,18 @@ object MkTypeInfo extends MkTypeInfo0_ADT {
 
 /** [[MkTypeInfo]] instances for (possibly recursive) Algebraic Data Types (ADTs). */
 trait MkTypeInfo0_ADT extends MkTypeInfo1_CaseClass {
-  implicit def product[P <: Product: Recursive: ClassTag, R <: HList](
-    implicit
-    gen: Generic.Aux[P, R],
-    fields: TypeInfos[R],
-    stream: ToTraversable[R, Stream]
+  implicit def product[P <: Product: Recursive: ClassTag, R <: HList, T <: HList](
+    implicit gen: Generic.Aux[P, R], fields: TypeInfos[R], list: AsList[R, Any]
   ): MkTypeInfo[P] = mk {
-    // Use null to work around head strictness.
-    ProductTypeInfo(null #:: fields())(
+    new ProductTypeInfo(fields().toVector)(
       values => gen.from(values.foldRight[HList](HNil)(_ :: _).asInstanceOf[R]),
-      record => stream(gen.to(record)))
+      record => list(gen.to(record)))
   }
 
   implicit def coproduct[C: ClassTag, R <: Coproduct](
-    implicit
-    gen: Generic.Aux[C, R],
-    variants: TypeInfos[R],
-    index: Which[R]
+    implicit gen: Generic.Aux[C, R], variants: TypeInfos[R], index: Which[R]
   ): MkTypeInfo[C] = mk {
-    // Use null to work around head strictness.
-    CoproductTypeInfo(null #:: variants())(index.compose(gen.to))
+    new CoproductTypeInfo(variants().toVector)(index.compose(gen.to))
   }
 }
 
@@ -74,11 +66,11 @@ trait MkTypeInfo1_CaseClass extends MkTypeInfoZ {
     infos: LiftAll.Aux[TypeInformation, V, T],
     vector: ToTraversable.Aux[K, Vector, Symbol],
     array: ToArray[T, TypeInformation[_]]
-  ): MkTypeInfo[P] = mk {
-    val clazz = tag.runtimeClass.asInstanceOf[Class[P]]
-    val names = for (k <- vector(unzip.keys)) yield k.name
+  ): MkTypeInfo[P] = {
+    val clazz  = tag.runtimeClass.asInstanceOf[Class[P]]
+    val names  = for (k <- vector(unzip.keys)) yield k.name
     val fields = array(infos.instances)
-    new CaseClassTypeInfo[P](clazz, Array.empty, fields, names) {
+    mk(new CaseClassTypeInfo[P](clazz, Array.empty, fields, names) {
       def createSerializer(config: ExecutionConfig) = {
         val serializers = for (f <- fields) yield f.createSerializer(config)
         new CaseClassSerializer[P](clazz, serializers) {
@@ -89,12 +81,12 @@ trait MkTypeInfo1_CaseClass extends MkTypeInfoZ {
           })"
         }
       }
-    }
+    })
   }
 }
 
 /** Lowest priority [[MkTypeInfo]] instances. */
 trait MkTypeInfoZ {
-  protected def mk[A](instance: TypeInformation[A]): MkTypeInfo[A] =
-    new MkTypeInfo[A](instance)
+  protected def mk[A](instance: => TypeInformation[A]): MkTypeInfo[A] =
+    new MkTypeInfo[A] { def apply = instance }
 }

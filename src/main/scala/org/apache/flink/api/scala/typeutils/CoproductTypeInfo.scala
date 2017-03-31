@@ -23,11 +23,12 @@ import api.common.typeutils.TypeSerializer
 import scala.reflect.ClassTag
 
 /** [[TypeInformation]] for recursive coproduct types (sealed traits). */
-case class CoproductTypeInfo[T](variants: Stream[TypeInformation[_]])
+class CoproductTypeInfo[T](vs: => Seq[TypeInformation[_]])
     (which: T => Int)(implicit tag: ClassTag[T])
     extends TypeInformation[T] with InductiveObject {
 
-  private var serializer: TypeSerializer[T] = _
+  lazy val variants = vs
+  @transient private var serializer: CoproductSerializer[T] = _
 
   def isBasicType = false
   def isKeyType = false
@@ -40,18 +41,25 @@ case class CoproductTypeInfo[T](variants: Stream[TypeInformation[_]])
 
   // Handle cycles in the object graph.
   def createSerializer(config: ExecutionConfig) = inductive(serializer) {
-    val vs = for (v <- variants) yield if (v == null) null
-      else v.createSerializer(config).asInstanceOf[TypeSerializer[T]]
-
-    serializer = CoproductSerializer(vs)(which)
-    vs.force
+    serializer = CoproductSerializer()(which)
+    serializer.variants = for (v <- variants)
+      yield v.createSerializer(config).asInstanceOf[TypeSerializer[T]]
     serializer
   }
 
-  override lazy val hashCode =
+  def canEqual(that: Any) =
+    that.isInstanceOf[CoproductTypeInfo[_]]
+
+  override def equals(other: Any) = other match {
+    case that: CoproductTypeInfo[_] =>
+      (this eq that) || (that canEqual this) && this.variants == that.variants
+    case _ => false
+  }
+
+  override def hashCode =
     inductive(0)(31 * variants.##)
 
   override def toString = inductive("this") {
-    s"${getTypeClass.getTypeName}(${variants.tail.mkString(", ")})"
+    s"${getTypeClass.getTypeName}(${variants.mkString(", ")})"
   }
 }

@@ -23,16 +23,17 @@ import api.common.typeutils.TypeSerializer
 import scala.reflect.ClassTag
 
 /** [[TypeInformation]] for recursive product types (case classes). */
-case class ProductTypeInfo[P](fields: Stream[TypeInformation[_]])
+class ProductTypeInfo[P](fs: => Seq[TypeInformation[_]])
     (from: Seq[Any] => P, to: P => Seq[Any])(implicit tag: ClassTag[P])
     extends TypeInformation[P] with InductiveObject {
 
-  private var serializer: TypeSerializer[P] = _
+  lazy val fields = fs
+  @transient private var serializer: ProductSerializer[P] = _
 
   def isBasicType = false
   def isTupleType = false
   def isKeyType = false
-  def getArity = fields.size - 1
+  def getArity = fields.size
   def getTotalFields = getArity
 
   def getTypeClass =
@@ -40,18 +41,25 @@ case class ProductTypeInfo[P](fields: Stream[TypeInformation[_]])
 
   // Handle cycles in the object graph.
   def createSerializer(config: ExecutionConfig) = inductive(serializer) {
-    val fs = for (f <- fields) yield if (f == null) null
-      else f.createSerializer(config).asInstanceOf[TypeSerializer[Any]]
-
-    serializer = ProductSerializer(fs)(from, to)
-    fs.force
+    serializer = ProductSerializer()(from, to)
+    serializer.fields = for (f <- fields)
+      yield f.createSerializer(config).asInstanceOf[TypeSerializer[Any]]
     serializer
   }
 
-  override lazy val hashCode =
+  def canEqual(that: Any) =
+    that.isInstanceOf[ProductTypeInfo[_]]
+
+  override def equals(other: Any) = other match {
+    case that: ProductTypeInfo[_] =>
+      (this eq that) || (that canEqual this) && this.fields == that.fields
+    case _ => false
+  }
+
+  override def hashCode =
     inductive(0)(31 * fields.##)
 
   override def toString = inductive("this") {
-    s"${getTypeClass.getTypeName}(${fields.tail.mkString(", ")})"
+    s"${getTypeClass.getTypeName}(${fields.mkString(", ")})"
   }
 }

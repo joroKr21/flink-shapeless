@@ -21,54 +21,52 @@ import core.memory.DataInputView
 import core.memory.DataOutputView
 
 /** A [[TypeSerializer]] for recursive coproduct types (sealed traits). */
-case class CoproductSerializer[T](variants: Stream[TypeSerializer[T]])
+case class CoproductSerializer[T](var variants: Seq[TypeSerializer[T]] = Seq.empty)
     (which: T => Int) extends TypeSerializer[T] with InductiveObject {
-
-  // Head is `null` to work around strictness.
-  private def vs = variants.tail
 
   def getLength = -1
 
-  lazy val isImmutableType =
-    inductive(true)(vs.forall(_.isImmutableType))
+  def isImmutableType = inductive(true) {
+    variants.forall(_.isImmutableType)
+  }
 
   def duplicate = inductive(this) {
-    CoproductSerializer(variants.map { v =>
-      if (v == null) null else v.duplicate
-    }.force)(which)
+    val serializer = CoproductSerializer()(which)
+    serializer.variants = for (v <- variants) yield v.duplicate
+    serializer
   }
 
   def createInstance =
-    vs.head.createInstance
+    variants.head.createInstance
 
   def copy(record: T, reuse: T) =
     copy(record)
 
   def copy(record: T) =
-    vs(which(record)).copy(record)
+    variants(which(record)).copy(record)
 
   def copy(source: DataInputView, target: DataOutputView) = {
     val i = source.readInt()
     target.writeInt(i)
-    vs(i).copy(source, target)
+    variants(i).copy(source, target)
   }
 
   def serialize(record: T, target: DataOutputView) = {
     val i = which(record)
     target.writeInt(i)
-    vs(i).serialize(record, target)
+    variants(i).serialize(record, target)
   }
 
   def deserialize(reuse: T, source: DataInputView) =
     deserialize(source)
 
   def deserialize(source: DataInputView) =
-    vs(source.readInt()).deserialize(source)
+    variants(source.readInt()).deserialize(source)
 
-  override lazy val hashCode =
+  override def hashCode =
     inductive(0)(31 * variants.##)
 
   override def toString = inductive("this") {
-    s"CoproductSerializer(${vs.mkString(", ")})"
+    s"CoproductSerializer(${variants.mkString(", ")})"
   }
 }

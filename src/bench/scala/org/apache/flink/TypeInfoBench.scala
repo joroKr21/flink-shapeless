@@ -37,28 +37,33 @@ object TypeInfoBench extends Bench.OfflineReport {
     s <- Gen.enumeration("# Nodes")(50, 100)
   } yield (n, s)
 
-  def bench[R](n: Int, s: Int)(implicit arb: Arbitrary[R], info: TypeInformation[R]) = {
-    val serializer = info.createSerializer(config)
-    val data = listOfN(n, resize(s, arb.arbitrary))
-      .pureApply(Parameters.default, Seed.random)
+  def bench[R](implicit arb: Arbitrary[R], info: TypeInformation[R]) =
+    performance of "TypeSerializer" in {
+      val tpe = info.getTypeClass.getSimpleName
+      val serializer = info.createSerializer(config)
+      println(s"[info] Benchmarking $serializer")
+      using(sizes) curve tpe in { case (n, s) =>
+        val data = listOfN(n, resize(s, arb.arbitrary))
+          .pureApply(Parameters.default, Seed.random)
 
-    for { // Serialize all records to a byte array and read them back.
-      os <- resource.managed(new ByteArrayOutputStream)
-      ov <- resource.managed(new DataOutputViewStreamWrapper(os))
-      _ = for (record <- data) serializer.serialize(record, ov)
-      is <- resource.managed(new ByteArrayInputStream(os.toByteArray))
-      iv <- resource.managed(new DataInputViewStreamWrapper(is))
-    } for (_ <- 1 to n) serializer.deserialize(iv)
-  }
+        for { // Serialize all records to a byte array and read them back.
+          os <- resource.managed(new ByteArrayOutputStream)
+          ov <- resource.managed(new DataOutputViewStreamWrapper(os))
+          _ = for (record <- data) serializer.serialize(record, ov)
+          is <- resource.managed(new ByteArrayInputStream(os.toByteArray))
+          iv <- resource.managed(new DataInputViewStreamWrapper(is))
+        } for (_ <- 1 to n) serializer.deserialize(iv)
+      }
+    }
 
-  performance of "derived TypeSerializer" in {
+  performance of "derived" in {
     import Implicits._
-    using (sizes) curve "NTree" in (bench [NTree[Int]] _).tupled
-    using (sizes) curve "BTree" in (bench [BTree[Int]] _).tupled
+    bench [NTree[Int]]
+    bench [BTree[Int]]
   }
 
-  performance of "default TypeSerializer" in {
-    using (sizes) curve "NTree" in (bench [NTree[Int]] _).tupled
-    using (sizes) curve "BTree" in (bench [BTree[Int]] _).tupled
+  performance of "default" in {
+    bench [NTree[Int]]
+    bench [BTree[Int]]
   }
 }
