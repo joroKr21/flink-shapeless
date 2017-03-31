@@ -1,4 +1,4 @@
-# Flink-Shapeless
+# Flink-Shapeless [![Build Status](https://travis-ci.org/joroKr21/flink-shapeless.svg?branch=master)](https://travis-ci.org/joroKr21/flink-shapeless)
 Flink-Shapeless replaces the default macro based implicit
 provider for `TypeInformation[T]` in
 [Apache Flink](https://flink.apache.org/)'s Scala API

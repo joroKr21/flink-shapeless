@@ -14,7 +14,6 @@ lazy val benchSettings = Seq(
 )
 
 lazy val coverageSettings = Seq(
-  coverageEnabled := true,
   coverageMinimum := 70,
   coverageFailOnMinimum := false,
   coverageExcludedFiles := ".*/src/test/.*;.*/src/bench/.*"

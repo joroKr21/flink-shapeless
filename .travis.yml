@@ -1,9 +1,11 @@
 sudo: false
 language: scala
 scala:
+   - 2.10.6
    - 2.11.8
 jdk:
    - oraclejdk8
 script:
-  - sbt +test
-  - sbt +bench:compile
+  - sbt ++$TRAVIS_SCALA_VERSION clean coverage test bench:compile coverageReport
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
