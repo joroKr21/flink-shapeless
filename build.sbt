@@ -46,10 +46,10 @@ lazy val commonSettings = Seq(
     "-Xfatal-warnings",
     "-Xlint"
   ),
-  libraryDependencies ++=
-    compileDependencies ++
-    testDependencies ++
-    benchDependencies
+  libraryDependencies ++= compileDependencies ++ testDependencies ++ benchDependencies,
+  libraryDependencies ++= (if (scalaBinaryVersion.value == "2.10")
+    Seq(compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.patch))
+  else Seq.empty)
 )
 
 lazy val root = Project("flink-shapeless", file("."))
