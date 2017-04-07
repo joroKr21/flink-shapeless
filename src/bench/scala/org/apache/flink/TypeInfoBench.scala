@@ -28,7 +28,7 @@ import org.scalameter.picklers.Implicits._
 
 import java.io._
 
-object TypeInfoBench extends Bench.OfflineReport {
+object TypeInfoBench extends Bench.OnlineRegressionReport {
   import ADTsBench._
 
   val config = new ExecutionConfig
@@ -55,13 +55,13 @@ object TypeInfoBench extends Bench.OfflineReport {
     }
   }
 
-  performance of "derived TypeSerializer" in {
+  performance of "Flink-Shapeless" in {
     import Implicits._
     bench [NTree[Int]]
     bench [BTree[Int]]
   }
 
-  performance of "default TypeSerializer" in {
+  performance of "Kryo serializer" in {
     bench [NTree[Int]]
     bench [BTree[Int]]
   }

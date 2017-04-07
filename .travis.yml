@@ -9,3 +9,5 @@ script:
   - sbt ++$TRAVIS_SCALA_VERSION clean coverage test bench:compile coverageReport
 after_success:
   - bash <(curl -s https://codecov.io/bash)
+notifications:
+  email: false

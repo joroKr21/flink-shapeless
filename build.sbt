@@ -1,5 +1,7 @@
 lazy val Benchmark = config("bench") extend Test
 
+lazy val ScalaMeter = new TestFramework("org.scalameter.ScalaMeterFramework")
+
 lazy val buildSettings = Seq(
   organization := "com.github",
   name := "flink-shapeless",
@@ -8,9 +10,10 @@ lazy val buildSettings = Seq(
 )
 
 lazy val benchSettings = Seq(
-  testFrameworks += new TestFramework("org.scalameter.ScalaMeterFramework"),
+  testFrameworks += ScalaMeter,
   parallelExecution in Benchmark := false,
-  logBuffered := false
+  logBuffered := false,
+  testOptions in Benchmark += Tests.Argument(ScalaMeter, "-CresultDir", "docs/benchmarks")
 )
 
 lazy val coverageSettings = Seq(
