@@ -56,7 +56,7 @@ object TypeInfoBench extends Bench.OnlineRegressionReport {
   }
 
   performance of "Flink-Shapeless" in {
-    import Implicits._
+    import FlinkShapeless._
     bench [NTree[Int]]
     bench [BTree[Int]]
   }

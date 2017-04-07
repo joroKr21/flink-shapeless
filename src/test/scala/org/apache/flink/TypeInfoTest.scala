@@ -39,7 +39,7 @@ import java.{lang => boxed}
 
 class TypeInfoTest extends FreeSpec with Matchers with PropertyChecks {
   import ADTsTest._
-  import Implicits._
+  import FlinkShapeless._
 
   val buffer = new CircularByteBuffer(CircularByteBuffer.INFINITE_SIZE, false)
   val config = new ExecutionConfig

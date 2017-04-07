@@ -16,4 +16,4 @@
 package org.apache.flink
 package api.scala
 
-object Implicits extends typeinfo.Instances
+object FlinkShapeless extends typeinfo.Instances
