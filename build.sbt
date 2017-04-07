@@ -38,17 +38,24 @@ lazy val benchDependencies = Seq(
 
 lazy val commonSettings = Seq(
   scalacOptions := Seq(
-    "-language:higherKinds",
-    "-feature",
+    "-encoding", "UTF-8",
     "-deprecation",
+    "-feature",
     "-unchecked",
+    "-language:higherKinds",
+    "-Ywarn-dead-code",
     "-Xfatal-warnings",
+    "-Xfuture",
     "-Xlint"
-  ),
+  ) ++ {
+    if (scalaBinaryVersion.value.toDouble <= 2.10) Seq.empty
+    else Seq("-Ywarn-unused", "-Ywarn-unused-import")
+  },
   libraryDependencies ++= compileDependencies ++ testDependencies ++ benchDependencies,
-  libraryDependencies ++= (if (scalaBinaryVersion.value == "2.10")
-    Seq(compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.patch))
-  else Seq.empty)
+  libraryDependencies ++= {
+    if (scalaBinaryVersion.value.toDouble > 2.10) Seq.empty
+    else Seq(compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.patch))
+  }
 )
 
 lazy val root = Project("flink-shapeless", file("."))
