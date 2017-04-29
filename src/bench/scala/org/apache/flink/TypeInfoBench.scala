@@ -28,30 +28,26 @@ import org.scalameter.picklers.Implicits._
 
 import java.io._
 
-object TypeInfoBench extends Bench.OnlineRegressionReport {
+object TypeInfoBench extends Bench.OfflineReport {
   import ADTsBench._
-
-  val config = new ExecutionConfig
-  val sizes  = for {
-    n <- Gen.range("# Trees")(100, 500, 100)
-    s <- Gen.enumeration("# Nodes")(50, 100)
-  } yield (n, s)
 
   def bench[R](implicit arb: Arbitrary[R], info: TypeInformation[R]) = {
     val tpe = info.getTypeClass.getSimpleName
-    val serializer = info.createSerializer(config)
+    val serializer = info.createSerializer(new ExecutionConfig)
     println(s"[info] Benchmarking $serializer")
-    using(sizes) curve tpe in { case (n, s) =>
-      val data = listOfN(n, resize(s, arb.arbitrary))
-        .pureApply(Parameters.default, Seed.random)
-
+    val data = for {
+      n <- Gen.range("# Trees")(100, 500, 100)
+      s <- Gen.enumeration("# Nodes")(50, 100)
+      gen = listOfN(n, resize(s, arb.arbitrary))
+    } yield gen.pureApply(Parameters.default, Seed.random)
+    using(data) curve tpe in { records =>
       for { // Serialize all records to a byte array and read them back.
         os <- resource.managed(new ByteArrayOutputStream)
         ov <- resource.managed(new DataOutputViewStreamWrapper(os))
-        _ = for (record <- data) serializer.serialize(record, ov)
+        _ = for (record <- records) serializer.serialize(record, ov)
         is <- resource.managed(new ByteArrayInputStream(os.toByteArray))
         iv <- resource.managed(new DataInputViewStreamWrapper(is))
-      } for (_ <- 1 to n) serializer.deserialize(iv)
+      } for (_ <- records) serializer.deserialize(iv)
     }
   }
 

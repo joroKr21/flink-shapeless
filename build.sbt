@@ -5,8 +5,8 @@ lazy val ScalaMeter = new TestFramework("org.scalameter.ScalaMeterFramework")
 lazy val buildSettings = Seq(
   organization := "com.github",
   name := "flink-shapeless",
-  scalaVersion in ThisBuild := "2.11.8",
-  crossScalaVersions := Seq("2.10.6", "2.11.8")
+  scalaVersion in ThisBuild := "2.11.11",
+  crossScalaVersions := Seq("2.10.6", "2.11.11")
 )
 
 lazy val benchSettings = Seq(
@@ -28,8 +28,8 @@ lazy val compileDependencies = Seq(
 )
 
 lazy val testDependencies = Seq(
-  "org.scalatest" %% "scalatest" % "3.0.1",
-  "org.scalacheck" %% "scalacheck" % "1.13.4",
+  "org.scalatest" %% "scalatest" % "3.0.3",
+  "org.scalacheck" %% "scalacheck" % "1.13.5",
   "com.github.alexarchambault" %% "scalacheck-shapeless_1.13" % "1.1.5",
   "com.jsuereth" %% "scala-arm" % "2.0",
   "org.ostermiller" % "utils" % "1.07.00"
