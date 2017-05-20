@@ -30,7 +30,7 @@ val counts = text
   .groupBy(0).sum(1)
 ```
 
-## Advantages
+## Features
 There are a couple of advantages to automatic type class derivation over the default macro based approach.
 
 ### Customizability
@@ -50,6 +50,20 @@ implicitly[TypeInformation[Foo]]
 implicitly[TypeInformation[List[Foo]]]
 implicitly[TypeInformation[(Foo, Long)]]
 implicitly[TypeInformation[Bar]]
+```
+
+### Data Type Mappings
+Creating custom serializers from scratch is usually not what you want to do.
+Most often, you want to map your custom data type to one with an existing serializer.
+This is where the `Inject` type class comes in
+(called like this because it is essentially an injective i.e. invertible function between the two data types).
+E.g. the following definition is enough to provide a `TypeInformation` instance for a [Breeze](https://github.com/scalanlp/breeze) `Vector`.
+
+```scala
+import breeze.linalg.Vector
+
+implicit def injectVector[A]: Inject[Vector[A], Array[A]] =
+  Inject(_.toArray, Vector(_))
 ```
 
 ### Recursive ADTs

@@ -20,9 +20,9 @@ import api.common.typeutils.TypeSerializer
 import core.memory.DataInputView
 import core.memory.DataOutputView
 
-/** A [[TypeSerializer]] for [[B]] based on isomorphism with type [[A]]. */
-case class IsomorphicSerializer[A, B](underlying: TypeSerializer[A])
-    (from: A => B, to: B => A) extends TypeSerializer[B] {
+/** A [[TypeSerializer]] for [[A]] based on an injection into [[B]]. */
+case class InjectSerializer[A, B](underlying: TypeSerializer[B])
+    (inj: Inject[A, B]) extends TypeSerializer[A] {
 
   def isImmutableType =
     underlying.isImmutableType
@@ -31,26 +31,26 @@ case class IsomorphicSerializer[A, B](underlying: TypeSerializer[A])
     underlying.getLength
 
   def duplicate =
-    IsomorphicSerializer(underlying.duplicate)(from, to)
+    InjectSerializer(underlying.duplicate)(inj)
 
   def createInstance =
-    from(underlying.createInstance)
+    inj.invert(underlying.createInstance)
 
-  def copy(record: B) =
-    from(underlying.copy(to(record)))
+  def copy(record: A) =
+    inj.invert(underlying.copy(inj(record)))
 
-  def copy(record: B, reuse: B) =
+  def copy(record: A, reuse: A) =
     copy(record)
 
   def copy(source: DataInputView, target: DataOutputView) =
     underlying.copy(source, target)
 
-  def serialize(record: B, target: DataOutputView) =
-    underlying.serialize(to(record), target)
+  def serialize(record: A, target: DataOutputView) =
+    underlying.serialize(inj(record), target)
 
   def deserialize(source: DataInputView) =
-    from(underlying.deserialize(source))
+    inj.invert(underlying.deserialize(source))
 
-  def deserialize(reuse: B, source: DataInputView) =
+  def deserialize(reuse: A, source: DataInputView) =
     deserialize(source)
 }

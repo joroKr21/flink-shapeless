@@ -21,8 +21,13 @@ import org.scalacheck._
 
 import scala.util._
 
-import java.{lang => boxed}
+import scala.collection.JavaConverters._
+import scala.collection.mutable
+
+import java.awt.Color
 import java.math
+import java.{lang => boxed}
+import java.{util => jutil}
 
 /** Data definitions. Must be separate due to SI-7046. */
 object ADTsTest {
@@ -69,11 +74,26 @@ object ADTsTest {
   implicit val arbBoxedDouble:  Arbitrary[boxed.Double]    = Arbitrary(arb[Double].map(d => d))
   implicit val arbBoxedChar:    Arbitrary[boxed.Character] = Arbitrary(arb[Char].map(c => c))
 
+  implicit val arbColor: Arbitrary[Color] = {
+    val shade = choose(0, 255)
+    Arbitrary(for (r <- shade; g <- shade; b <- shade; a <- shade)
+      yield new Color(r, g, b, a))
+  }
+
   implicit val arbJavaBigInt: Arbitrary[math.BigInteger] =
     Arbitrary(for (int <- arb[BigInt]) yield int.bigInteger)
 
   implicit val arbJavaBigDec: Arbitrary[math.BigDecimal] =
     Arbitrary(for (dec <- arb[BigDecimal]) yield dec.bigDecimal)
+
+  implicit def arbJavaList[A: Arbitrary]: Arbitrary[jutil.List[A]] =
+    Arbitrary(arb[mutable.Buffer[A]].map(_.asJava))
+
+  implicit def arbJavaSet[A: Arbitrary]: Arbitrary[jutil.Set[A]] =
+    Arbitrary(arb[mutable.Set[A]].map(_.asJava))
+
+  implicit def arbJavaMap[K: Arbitrary, V: Arbitrary]: Arbitrary[jutil.Map[K, V]] =
+    Arbitrary(arb[mutable.Map[K, V]].map(_.asJava))
 
   /** [[Exception]] with structural equality. */
   implicit val arbThrowable: Arbitrary[Throwable] =

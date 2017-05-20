@@ -21,10 +21,9 @@ import api.common.typeinfo.TypeInformation
 
 import scala.reflect.ClassTag
 
-/** [[TypeInformation]] for type [[B]] based on isomorphism with type [[A]]. */
-case class IsomorphicTypeInfo[A, B](underlying: TypeInformation[A])
-    (from: A => B, to: B => A)(implicit tag: ClassTag[B])
-    extends TypeInformation[B] {
+/** [[TypeInformation]] for type [[A]] based on an injection into type [[B]]. */
+case class InjectTypeInfo[A, B](underlying: TypeInformation[B])
+    (inj: Inject[A, B])(implicit tag: ClassTag[A]) extends TypeInformation[A] {
 
   def isBasicType =
     underlying.isBasicType
@@ -42,10 +41,10 @@ case class IsomorphicTypeInfo[A, B](underlying: TypeInformation[A])
     underlying.getTotalFields
 
   def getTypeClass =
-    tag.runtimeClass.asInstanceOf[Class[B]]
+    tag.runtimeClass.asInstanceOf[Class[A]]
 
   def createSerializer(config: ExecutionConfig) =
-    IsomorphicSerializer(underlying.createSerializer(config))(from, to)
+    InjectSerializer(underlying.createSerializer(config))(inj)
 
   override def toString =
     getTypeClass.getTypeName

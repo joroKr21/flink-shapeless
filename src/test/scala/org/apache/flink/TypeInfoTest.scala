@@ -29,13 +29,16 @@ import org.scalacheck.Shapeless._
 import org.scalatest._
 import org.scalatest.prop.PropertyChecks
 
+import scala.collection.mutable
 import scala.reflect.ClassTag
 import scala.util._
 
+import java.awt.Color
 import java.math
 import java.time.DayOfWeek
 import java.util.Date
 import java.{lang => boxed}
+import java.{util => jutil}
 
 class TypeInfoTest extends FreeSpec with Matchers with PropertyChecks {
   import ADTsTest._
@@ -186,6 +189,23 @@ class TypeInfoTest extends FreeSpec with Matchers with PropertyChecks {
     "Unknown" in {
       "typeInfo[scala.concurrent.Future[String]]" shouldNot typeCheck
       "typeInfo[java.lang.Exception]" shouldNot typeCheck
+    }
+
+    "Injections" in {
+      import scala.collection.JavaConversions._
+
+      implicit val injectColor: Inject[Color, (Int, Int, Int, Int)] = Inject(
+        col => (col.getRed, col.getGreen, col.getBlue, col.getAlpha),
+        { case (r, g, b, alpha) => new Color(r, g, b, alpha) })
+
+      implicit def injectList[A]   = Inject[jutil.List[A],   mutable.Buffer[A]]
+      implicit def injectSet[A]    = Inject[jutil.Set[A],    mutable.Set[A]]
+      implicit def injectMap[K, V] = Inject[jutil.Map[K, V], mutable.Map[K, V]]
+
+      test [Color]
+      test [jutil.List[Int]]
+      test [jutil.Set[DayOfWeek]]
+      test [jutil.Map[String, Long]]
     }
   }
 }

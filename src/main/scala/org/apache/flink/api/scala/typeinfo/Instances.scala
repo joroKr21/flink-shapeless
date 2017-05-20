@@ -22,10 +22,10 @@ import api.java.typeutils._
 import api.scala.derived.MkTypeInfo
 import api.scala.typeutils._
 import types.Value
-
 import shapeless._
 
 import scala.collection.generic._
+import scala.collection.mutable
 import scala.reflect.ClassTag
 import scala.util.Try
 
@@ -76,23 +76,28 @@ trait Instances0_Basic extends Instances1_Enum {
   implicit val stringTypeInfo:  TypeInfo[String]   = STRING_TYPE_INFO
   implicit val dateTypeInfo:    TypeInfo[Date]     = DATE_TYPE_INFO
 
-  // Isomorphisms
+  // Injections
 
-  implicit val nullTypeInfo: TypeInfo[Null] =
-    isoTypeInfo[Unit, Null](_ => null, _ => ())
+  implicit private val injectNull: Inject[Null, Unit] =
+    Inject(_ => (), _ => null)
 
-  implicit val symbolTypeInfo: TypeInfo[Symbol] =
-    isoTypeInfo[String, Symbol](Symbol.apply, _.name)
+  implicit private val injectSymbol: Inject[Symbol, String] =
+    Inject(_.name, Symbol.apply)
 
-  implicit val bigIntTypeInfo: TypeInfo[BigInt] =
-    isoTypeInfo[math.BigInteger, BigInt](BigInt.apply, _.bigInteger)
+  implicit private val injectBigInt: Inject[BigInt, math.BigInteger] =
+    Inject(_.bigInteger, BigInt.apply)
 
-  implicit val bigDecTypeInfo: TypeInfo[BigDecimal] =
-    isoTypeInfo[math.BigDecimal, BigDecimal](BigDecimal.apply, _.bigDecimal)
+  implicit private val injectBigDec: Inject[BigDecimal, math.BigDecimal] =
+    Inject(_.bigDecimal, BigDecimal.apply)
+
+  implicit val nullTypeInfo:   TypeInfo[Null]       = injectTypeInfo
+  implicit val symbolTypeInfo: TypeInfo[Symbol]     = injectTypeInfo
+  implicit val bigIntTypeInfo: TypeInfo[BigInt]     = injectTypeInfo
+  implicit val bigDecTypeInfo: TypeInfo[BigDecimal] = injectTypeInfo
 }
 
 /** [[TypeInformation]] instances for Java and Scala enumerations. */
-trait Instances1_Enum extends Instances2_Option {
+trait Instances1_Enum extends Instances2_Option_Either_Try {
   implicit def enumTypeInfo[E <: Enum[E]: ClassTag]: TypeInfo[E] =
     new EnumTypeInfo(classFor)
 
@@ -101,31 +106,25 @@ trait Instances1_Enum extends Instances2_Option {
   ): TypeInfo[E#Value] = new EnumValueTypeInfo(enum.value, classOf)
 }
 
-/** [[TypeInformation]] instances for [[Option]] and subclasses. */
-trait Instances2_Option extends Instances3_Either {
+/** [[TypeInformation]] instances for [[Option]], [[Either]], [[Try]] and subclasses. */
+trait Instances2_Option_Either_Try extends Instances3_Array {
   implicit val noneTypeInfo: TypeInfo[None.type] =
     new OptionTypeInfo[Nothing, None.type](new ScalaNothingTypeInfo)
 
   implicit def optionTypeInfo[O[a] <: Option[a], A: TypeInfo]: TypeInfo[O[A]] =
     new OptionTypeInfo[A, O[A]](implicitly)
-}
 
-/** [[TypeInformation]] instances for [[Either]] and subclasses. */
-trait Instances3_Either extends Instances4_Try {
   implicit def eitherTypeInfo[
     E[l, r] <: Either[l, r], L: TypeInfo, R: TypeInfo
   ](implicit tag: ClassTag[E[L, R]]): TypeInfo[E[L, R]] =
     new api.scala.typeutils.EitherTypeInfo[L, R, E[L, R]](classFor, implicitly, implicitly)
-}
 
-/** [[TypeInformation]] instances for [[Try]] and subclasses. */
-trait Instances4_Try extends Instances5_Array {
   implicit def tryTypeInfo[T[a] <: Try[a], A: TypeInfo]: TypeInfo[T[A]] =
     new TryTypeInfo[A, T[A]](implicitly)
 }
 
 /** [[TypeInformation]] instances for basic (primitive) arrays. */
-trait Instances5_Array extends Instances6_Traversable {
+trait Instances3_Array extends Instances4_Traversable {
   import BasicArrayTypeInfo._
   import PrimitiveArrayTypeInfo._
 
@@ -152,7 +151,13 @@ trait Instances5_Array extends Instances6_Traversable {
 }
 
 /** [[TypeInformation]] instances for [[Array]], [[Traversable]] and [[Map]]. */
-trait Instances6_Traversable extends Instances7_Value {
+trait Instances4_Traversable extends Instances5_Value {
+  private implicit def injectMap[K, V]: Inject[Map[K, V], Seq[(K, V)]] =
+    Inject(_.toSeq, _.toMap)
+
+  private implicit def injectMutableMap[K, V]: Inject[mutable.Map[K, V], Seq[(K, V)]] =
+    Inject(_.toSeq, mutable.Map(_: _*))
+
   implicit def arrayTypeInfo[E](implicit element: TypeInfo[E]): TypeInfo[Array[E]] =
     ObjectArrayTypeInfo.getInfoFor(element)
 
@@ -168,39 +173,45 @@ trait Instances6_Traversable extends Instances7_Value {
       new TraversableSerializer[T[E], E](elementTypeInfo.createSerializer(config)) {
         override def toString = s"TraversableSerializer[$elementSerializer]"
         def getCbf = new CanBuildFrom[T[E], E, T[E]] {
-          def apply(from: T[E]) = (from: GenericTraversableTemplate[E, T]).genericBuilder
+          def apply(from: T[E]) = ev(from).genericBuilder
           def apply() = apply(empty)
         }
       }
   }
 
-  implicit def mapTypeInfo[K, V](implicit kv: TypeInfo[(K, V)]): TypeInfo[Map[K, V]] =
-    new TraversableTypeInfo[Map[K, V], (K, V)](classOf, kv) {
-      def createSerializer(config: ExecutionConfig) =
-        new TraversableSerializer[Map[K, V], (K, V)](kv.createSerializer(config)) {
-          def getCbf = Map.canBuildFrom
-          override def toString = s"TraversableSerializer[$elementSerializer]"
-        }
-    }
+  implicit def mapTypeInfo[K, V](
+    implicit kv: TypeInfo[(K, V)]
+  ): TypeInfo[Map[K, V]] = injectTypeInfo
+
+  implicit def mutableMapTypeInfo[K, V](
+    implicit kv: TypeInfo[(K, V)]
+  ): TypeInfo[mutable.Map[K, V]] = injectTypeInfo
 }
 
 /** [[TypeInformation]] instances for [[Value]] types. */
-trait Instances7_Value extends Instances8_Singleton {
+trait Instances5_Value extends Instances6_Singleton {
   implicit def valueTypeInfo[V <: Value: ClassTag]: TypeInfo[V] =
     new ValueTypeInfo(classFor)
 }
 
 /** [[TypeInformation]] instances for [[Singleton]] objects. */
-trait Instances8_Singleton extends Instances9_Derived {
+trait Instances6_Singleton extends Instances7_Injected {
   implicit def singletonTypeInfo[S: ClassTag](
     implicit singleton: Witness.Aux[S]
-  ): TypeInfo[S] = isoTypeInfo[Unit, S](
-    _ => singleton.value, _ => ()
-  )(new UnitTypeInfo, implicitly)
+  ): TypeInfo[S] = injectTypeInfo[S, Unit](
+    Inject(_ => (), _ => singleton.value), new UnitTypeInfo, implicitly)
+}
+
+/** [[TypeInformation]] instances for [[Inject]]ed types. */
+trait Instances7_Injected extends Instances8_Derived {
+  /** Creates [[TypeInformation]] for type [[A]] based on an injection into [[B]]. */
+  implicit def injectTypeInfo[A, B](
+    implicit inj: Inject[A, B], underlying: TypeInfo[B], tag: ClassTag[A]
+  ): TypeInfo[A] = InjectTypeInfo[A, B](underlying)(inj)
 }
 
 /** Automatically derived [[TypeInformation]] instances. */
-trait Instances9_Derived extends InstancesZ {
+trait Instances8_Derived extends InstancesZ {
 
   /**
    * If type [[A]] is a (possibly recursive) Algebraic Data Type (ADT), automatically derives a
@@ -229,8 +240,4 @@ trait InstancesZ {
 
   protected def classFor[A](implicit tag: ClassTag[A]): Class[A] =
     tag.runtimeClass.asInstanceOf[Class[A]]
-
-  /** Creates [[TypeInformation]] for type [[B]] based on isomorphism with type [[A]]. */
-  def isoTypeInfo[A: TypeInfo, B: ClassTag](from: A => B, to: B => A): TypeInfo[B] =
-    IsomorphicTypeInfo[A, B](implicitly)(from, to)
 }
