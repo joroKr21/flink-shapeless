@@ -16,11 +16,10 @@
 package org.apache.flink
 
 import api.common.typeinfo.TypeInformation
-
 import org.scalacheck._
 
 import scala.util._
-
+//import scala.beans._
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
@@ -61,6 +60,34 @@ object ADTsTest {
   case class Foo(x: Int)
   object Foo {
     implicit val info: TypeInformation[Foo] = null
+  }
+
+  /** A POJO (no `Generic` instance). */
+  class Pojo {
+    var x: Int = _
+    var b: Boolean = _
+
+    def canEqual(other: Any): Boolean =
+      other.isInstanceOf[Pojo]
+
+    override def equals(other: Any): Boolean = other match {
+      case that: Pojo => (that canEqual this) &&
+        this.x == that.x && this.b == that.b
+      case _ => false
+    }
+  }
+
+  object Pojo {
+    implicit val arbitrary: Arbitrary[Pojo] =
+      Arbitrary(for {
+        x <- arb[Int]
+        b <- arb[Boolean]
+      } yield {
+        val pojo = new Pojo
+        pojo.x = x
+        pojo.b = b
+        pojo
+      })
   }
 
   // Arbitrary Java primitives

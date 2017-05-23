@@ -17,6 +17,7 @@ package org.apache.flink
 
 import api.common.ExecutionConfig
 import api.common.typeinfo.TypeInformation
+import api.java.typeutils._
 import api.scala._
 import api.scala.typeutils._
 import core.memory._
@@ -206,6 +207,16 @@ class TypeInfoTest extends FreeSpec with Matchers with PropertyChecks {
       test [jutil.List[Int]]
       test [jutil.Set[DayOfWeek]]
       test [jutil.Map[String, Long]]
+    }
+
+    "Fallback" in {
+      import api.scala.{createTypeInformation => fallbackTypeInfo}
+
+      typeInfo [Pojo] shouldBe a [PojoTypeInfo[_]]
+      typeInfo [Throwable] shouldBe a [GenericTypeInfo[_]]
+
+      test [Pojo]
+      test [Throwable]
     }
   }
 }
