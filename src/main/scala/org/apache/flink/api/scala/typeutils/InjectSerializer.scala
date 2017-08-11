@@ -24,33 +24,33 @@ import core.memory.DataOutputView
 case class InjectSerializer[A, B](underlying: TypeSerializer[B])
     (inj: Inject[A, B]) extends TypeSerializer[A] {
 
-  def isImmutableType =
+  def isImmutableType: Boolean =
     underlying.isImmutableType
 
-  def getLength =
+  def getLength: Int =
     underlying.getLength
 
-  def duplicate =
+  def duplicate: TypeSerializer[A] =
     InjectSerializer(underlying.duplicate)(inj)
 
-  def createInstance =
+  def createInstance: A =
     inj.invert(underlying.createInstance)
 
-  def copy(record: A) =
+  def copy(record: A): A =
     inj.invert(underlying.copy(inj(record)))
 
-  def copy(record: A, reuse: A) =
+  def copy(record: A, reuse: A): A =
     copy(record)
 
-  def copy(source: DataInputView, target: DataOutputView) =
+  def copy(source: DataInputView, target: DataOutputView): Unit =
     underlying.copy(source, target)
 
-  def serialize(record: A, target: DataOutputView) =
+  def serialize(record: A, target: DataOutputView): Unit =
     underlying.serialize(inj(record), target)
 
-  def deserialize(source: DataInputView) =
+  def deserialize(source: DataInputView): A =
     inj.invert(underlying.deserialize(source))
 
-  def deserialize(reuse: A, source: DataInputView) =
+  def deserialize(reuse: A, source: DataInputView): A =
     deserialize(source)
 }

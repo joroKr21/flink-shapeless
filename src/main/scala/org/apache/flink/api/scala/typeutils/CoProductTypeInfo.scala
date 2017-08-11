@@ -22,44 +22,45 @@ import api.common.typeutils.TypeSerializer
 
 import scala.reflect.ClassTag
 
-/** [[TypeInformation]] for recursive coproduct types (sealed traits). */
-class CoproductTypeInfo[T](vs: => Seq[TypeInformation[_]])
+/** [[TypeInformation]] for recursive co-product types (sealed traits). */
+class CoProductTypeInfo[T](vs: => Seq[TypeInformation[_]])
     (which: T => Int)(implicit tag: ClassTag[T])
     extends TypeInformation[T] with InductiveObject {
 
-  lazy val variants = vs
-  @transient private var serializer: CoproductSerializer[T] = _
+  private lazy val variants = vs
+  @transient private var serializer: CoProductSerializer[T] = _
 
-  def isBasicType = false
-  def isKeyType = false
-  def isTupleType = false
-  def getArity = 1
-  def getTotalFields = 1
+  def isBasicType: Boolean = false
+  def isKeyType: Boolean = false
+  def isTupleType: Boolean = false
+  def getArity: Int = 1
+  def getTotalFields: Int = 1
 
-  def getTypeClass =
+  def getTypeClass: Class[T] =
     tag.runtimeClass.asInstanceOf[Class[T]]
 
   // Handle cycles in the object graph.
-  def createSerializer(config: ExecutionConfig) = inductive(serializer) {
-    serializer = CoproductSerializer()(which)
-    serializer.variants = for (v <- variants)
-      yield v.createSerializer(config).asInstanceOf[TypeSerializer[T]]
-    serializer
-  }
+  def createSerializer(config: ExecutionConfig): TypeSerializer[T] =
+    inductive(serializer) {
+      serializer = CoProductSerializer()(which)
+      serializer.variants = for (v <- variants)
+        yield v.createSerializer(config).asInstanceOf[TypeSerializer[T]]
+      serializer
+    }
 
-  def canEqual(that: Any) =
-    that.isInstanceOf[CoproductTypeInfo[_]]
+  def canEqual(that: Any): Boolean =
+    that.isInstanceOf[CoProductTypeInfo[_]]
 
-  override def equals(other: Any) = other match {
-    case that: CoproductTypeInfo[_] =>
+  override def equals(other: Any): Boolean = other match {
+    case that: CoProductTypeInfo[_] =>
       (this eq that) || (that canEqual this) && this.variants == that.variants
     case _ => false
   }
 
-  override def hashCode =
+  override def hashCode: Int =
     inductive(0)(31 * variants.##)
 
-  override def toString = inductive("this") {
+  override def toString: String = inductive("this") {
     s"${getTypeClass.getTypeName}(${variants.mkString(", ")})"
   }
 }

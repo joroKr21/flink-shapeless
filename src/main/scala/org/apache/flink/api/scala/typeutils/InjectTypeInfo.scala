@@ -18,6 +18,7 @@ package api.scala.typeutils
 
 import api.common.ExecutionConfig
 import api.common.typeinfo.TypeInformation
+import api.common.typeutils.TypeSerializer
 
 import scala.reflect.ClassTag
 
@@ -25,27 +26,27 @@ import scala.reflect.ClassTag
 case class InjectTypeInfo[A, B](underlying: TypeInformation[B])
     (inj: Inject[A, B])(implicit tag: ClassTag[A]) extends TypeInformation[A] {
 
-  def isBasicType =
+  def isBasicType: Boolean =
     underlying.isBasicType
 
-  def isKeyType =
+  def isKeyType: Boolean =
     underlying.isKeyType
 
-  def isTupleType =
+  def isTupleType: Boolean =
     underlying.isTupleType
 
-  def getArity =
+  def getArity: Int =
     underlying.getArity
 
-  def getTotalFields =
+  def getTotalFields: Int =
     underlying.getTotalFields
 
-  def getTypeClass =
+  def getTypeClass: Class[A] =
     tag.runtimeClass.asInstanceOf[Class[A]]
 
-  def createSerializer(config: ExecutionConfig) =
+  def createSerializer(config: ExecutionConfig): TypeSerializer[A] =
     InjectSerializer(underlying.createSerializer(config))(inj)
 
-  override def toString =
+  override def toString: String =
     getTypeClass.getTypeName
 }

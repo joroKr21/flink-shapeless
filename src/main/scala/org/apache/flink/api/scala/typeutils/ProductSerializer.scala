@@ -25,46 +25,46 @@ case class ProductSerializer[P](var fields: Seq[TypeSerializer[Any]] = Seq.empty
     (from: Seq[Any] => P, to: P => Seq[Any])
     extends TypeSerializer[P] with InductiveObject {
 
-  def isImmutableType = inductive(true) {
+  def isImmutableType: Boolean = inductive(true) {
     fields.forall(_.isImmutableType)
   }
 
-  lazy val getLength = inductive(-1) {
+  lazy val getLength: Int = inductive(-1) {
     if (fields.exists(_.getLength <= 0)) -1
     else fields.map(_.getLength).sum
   }
 
-  def duplicate = inductive(this) {
+  def duplicate: TypeSerializer[P] = inductive(this) {
     val serializer = ProductSerializer()(from, to)
     serializer.fields = for (f <- fields) yield f.duplicate
     serializer
   }
 
-  def createInstance =
+  def createInstance: P =
     from(for (f <- fields) yield f.createInstance)
 
-  def copy(record: P, reuse: P) =
+  def copy(record: P, reuse: P): P =
     copy(record)
 
-  def copy(record: P) =
+  def copy(record: P): P =
     from(for ((f, v) <- fields zip to(record)) yield f.copy(v))
 
-  def copy(source: DataInputView, target: DataOutputView) =
+  def copy(source: DataInputView, target: DataOutputView): Unit =
     for (f <- fields) f.copy(source, target)
 
-  def serialize(record: P, target: DataOutputView) =
+  def serialize(record: P, target: DataOutputView): Unit =
     for ((f, v) <- fields zip to(record)) f.serialize(v, target)
 
-  def deserialize(reuse: P, source: DataInputView) =
+  def deserialize(reuse: P, source: DataInputView): P =
     deserialize(source)
 
-  def deserialize(source: DataInputView) =
+  def deserialize(source: DataInputView): P =
     from(for (f <- fields) yield f.deserialize(source))
 
-  override def hashCode =
+  override def hashCode: Int =
     inductive(0)(31 * fields.##)
 
-  override def toString = inductive("this") {
+  override def toString: String = inductive("this") {
     s"ProductSerializer(${fields.mkString(", ")})"
   }
 }

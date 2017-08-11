@@ -48,10 +48,10 @@ trait MkTypeInfo0_ADT extends MkTypeInfo1_CaseClass {
       record => list(gen.to(record)))
   }
 
-  implicit def coproduct[C: ClassTag, R <: Coproduct](
+  implicit def coProduct[C: ClassTag, R <: Coproduct](
     implicit gen: Generic.Aux[C, R], variants: TypeInfos[R], index: Which[R]
   ): MkTypeInfo[C] = mk {
-    new CoproductTypeInfo(variants().toVector)(index.compose(gen.to))
+    new CoProductTypeInfo(variants().toVector)(index.compose(gen.to))
   }
 }
 

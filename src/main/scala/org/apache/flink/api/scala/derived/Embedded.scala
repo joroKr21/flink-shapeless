@@ -41,22 +41,22 @@ object Embedded extends Embedded0_Head {
 
 /** [[Embedded]] instances for product and coproduct head. */
 trait Embedded0_Head extends Embedded1_Tail {
-  implicit def hhead[H, T <: HList, E](
+  implicit def hHead[H, T <: HList, E](
     implicit head: Strict[Embedded[H, E]]
   ): Embedded[H :: T, E] = instance
 
-  implicit def chead[H, T <: Coproduct, E](
+  implicit def cHead[H, T <: Coproduct, E](
     implicit head: Strict[Embedded[H, E]]
   ): Embedded[H :+: T, E] = instance
 }
 
 /** [[Embedded]] instances for product and coproduct tail. */
 trait Embedded1_Tail extends Embedded3_HKT {
-  implicit def htail[H, T <: HList, E](
+  implicit def hTail[H, T <: HList, E](
     implicit tail: Embedded[T, E]
   ): Embedded[H :: T, E] = instance
 
-  implicit def ctail[H, T <: Coproduct, E](
+  implicit def cTail[H, T <: Coproduct, E](
     implicit tail: Embedded[T, E]
   ): Embedded[H :+: T, E] = instance
 }

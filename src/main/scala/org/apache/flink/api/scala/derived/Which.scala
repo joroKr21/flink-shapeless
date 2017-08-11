@@ -29,11 +29,11 @@ object Which {
   def apply[C <: Coproduct: Which]: Which[C] = implicitly
 
   /** Available only for the compiler, never to be called. */
-  implicit val cnil: Which[CNil] = new Which[CNil] {
+  implicit val cNil: Which[CNil] = new Which[CNil] {
     def apply(nil: CNil) = ??? // impossible
   }
 
-  implicit def ccons[H, T <: Coproduct](
+  implicit def cCons[H, T <: Coproduct](
     implicit tailIndex: Which[T]
   ): Which[H :+: T] = new Which[H :+: T] {
     def apply(cons: H :+: T) = cons match {

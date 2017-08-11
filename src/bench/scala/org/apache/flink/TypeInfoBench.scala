@@ -31,7 +31,7 @@ import java.io._
 object TypeInfoBench extends Bench.OfflineReport {
   import ADTsBench._
 
-  def bench[R](implicit arb: Arbitrary[R], info: TypeInformation[R]) = {
+  def bench[R](implicit arb: Arbitrary[R], info: TypeInformation[R]): Unit = {
     val tpe = info.getTypeClass.getSimpleName
     val serializer = info.createSerializer(new ExecutionConfig)
     println(s"[info] Benchmarking $serializer")

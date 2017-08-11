@@ -13,11 +13,11 @@ trait AsList[T <: HList, E] extends (T => List[E]) with Serializable
 object AsList {
   def apply[T <: HList, E](implicit instance: AsList[T, E]): AsList[T, E] = instance
 
-  implicit def hnil[E]: AsList[HNil, E] = new AsList[HNil, E] {
+  implicit def hNil[E]: AsList[HNil, E] = new AsList[HNil, E] {
     def apply(nil: HNil) = Nil
   }
 
-  implicit def hcons[H, T <: HList, E](
+  implicit def hCons[H, T <: HList, E](
     implicit list: AsList[T, E], ev: H <:< E
   ): AsList[H :: T, E] = new AsList[H :: T, E] {
     def apply(cons: H :: T) = cons.head :: list(cons.tail)

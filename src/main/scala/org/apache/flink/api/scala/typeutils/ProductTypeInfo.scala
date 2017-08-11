@@ -27,39 +27,40 @@ class ProductTypeInfo[P](fs: => Seq[TypeInformation[_]])
     (from: Seq[Any] => P, to: P => Seq[Any])(implicit tag: ClassTag[P])
     extends TypeInformation[P] with InductiveObject {
 
-  lazy val fields = fs
+  private lazy val fields = fs
   @transient private var serializer: ProductSerializer[P] = _
 
-  def isBasicType = false
-  def isTupleType = false
-  def isKeyType = false
-  def getArity = fields.size
-  def getTotalFields = getArity
+  def isBasicType: Boolean = false
+  def isTupleType: Boolean = false
+  def isKeyType: Boolean = false
+  def getArity: Int = fields.size
+  def getTotalFields: Int = getArity
 
-  def getTypeClass =
+  def getTypeClass: Class[P] =
     tag.runtimeClass.asInstanceOf[Class[P]]
 
   // Handle cycles in the object graph.
-  def createSerializer(config: ExecutionConfig) = inductive(serializer) {
-    serializer = ProductSerializer()(from, to)
-    serializer.fields = for (f <- fields)
-      yield f.createSerializer(config).asInstanceOf[TypeSerializer[Any]]
-    serializer
-  }
+  def createSerializer(config: ExecutionConfig): TypeSerializer[P] =
+    inductive(serializer) {
+      serializer = ProductSerializer()(from, to)
+      serializer.fields = for (f <- fields)
+        yield f.createSerializer(config).asInstanceOf[TypeSerializer[Any]]
+      serializer
+    }
 
-  def canEqual(that: Any) =
+  def canEqual(that: Any): Boolean =
     that.isInstanceOf[ProductTypeInfo[_]]
 
-  override def equals(other: Any) = other match {
+  override def equals(other: Any): Boolean = other match {
     case that: ProductTypeInfo[_] =>
       (this eq that) || (that canEqual this) && this.fields == that.fields
     case _ => false
   }
 
-  override def hashCode =
+  override def hashCode: Int =
     inductive(0)(31 * fields.##)
 
-  override def toString = inductive("this") {
+  override def toString: String = inductive("this") {
     s"${getTypeClass.getTypeName}(${fields.mkString(", ")})"
   }
 }

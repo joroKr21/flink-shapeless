@@ -20,53 +20,53 @@ import api.common.typeutils.TypeSerializer
 import core.memory.DataInputView
 import core.memory.DataOutputView
 
-/** A [[TypeSerializer]] for recursive coproduct types (sealed traits). */
-case class CoproductSerializer[T](var variants: Seq[TypeSerializer[T]] = Seq.empty)
+/** A [[TypeSerializer]] for recursive co-product types (sealed traits). */
+case class CoProductSerializer[T](var variants: Seq[TypeSerializer[T]] = Seq.empty)
     (which: T => Int) extends TypeSerializer[T] with InductiveObject {
 
-  def getLength = -1
+  def getLength: Int = -1
 
-  def isImmutableType = inductive(true) {
+  def isImmutableType: Boolean = inductive(true) {
     variants.forall(_.isImmutableType)
   }
 
-  def duplicate = inductive(this) {
-    val serializer = CoproductSerializer()(which)
+  def duplicate: TypeSerializer[T] = inductive(this) {
+    val serializer = CoProductSerializer()(which)
     serializer.variants = for (v <- variants) yield v.duplicate
     serializer
   }
 
-  def createInstance =
+  def createInstance: T =
     variants.head.createInstance
 
-  def copy(record: T, reuse: T) =
+  def copy(record: T, reuse: T): T =
     copy(record)
 
-  def copy(record: T) =
+  def copy(record: T): T =
     variants(which(record)).copy(record)
 
-  def copy(source: DataInputView, target: DataOutputView) = {
+  def copy(source: DataInputView, target: DataOutputView): Unit = {
     val i = source.readInt()
     target.writeInt(i)
     variants(i).copy(source, target)
   }
 
-  def serialize(record: T, target: DataOutputView) = {
+  def serialize(record: T, target: DataOutputView): Unit = {
     val i = which(record)
     target.writeInt(i)
     variants(i).serialize(record, target)
   }
 
-  def deserialize(reuse: T, source: DataInputView) =
+  def deserialize(reuse: T, source: DataInputView): T =
     deserialize(source)
 
-  def deserialize(source: DataInputView) =
+  def deserialize(source: DataInputView): T =
     variants(source.readInt()).deserialize(source)
 
-  override def hashCode =
+  override def hashCode: Int =
     inductive(0)(31 * variants.##)
 
-  override def toString = inductive("this") {
+  override def toString: String = inductive("this") {
     s"CoproductSerializer(${variants.mkString(", ")})"
   }
 }
