@@ -91,7 +91,7 @@ object ADTsTest {
       })
   }
 
-  @derived.TypeInfo(AnnFactory)
+  @derived.TypeInfo[Ann](AnnFactory)
   case class Ann(i: Int, s: String)
   object AnnFactory extends TypeInfoFactory[Ann] {
     import derived.semiauto._
