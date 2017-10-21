@@ -16,27 +16,41 @@ lazy val benchSettings = Seq(
   testOptions in Benchmark += Tests.Argument(ScalaMeter, "-CresultDir", "docs/benchmarks")
 )
 
-lazy val coverageSettings = Seq(
+lazy val coverageSettings = Seq[Def.SettingsDefinition](
   coverageMinimum := 70,
   coverageFailOnMinimum := false,
   coverageExcludedFiles := ".*/src/test/.*;.*/src/bench/.*"
 )
 
+val versions = new {
+  val flink = "1.3.2"
+  val shapeless = "2.3.2"
+  val scalatest = "3.0.4"
+  val scalacheck = "1.13.5"
+  val checkless = "1.1.7"
+  val scala_meter = "0.8.2"
+  val scala_arm = "2.0"
+  val utils = "1.07.00"
+  val slf4j = "1.7.25"
+  val paradise = "2.1.0"
+}
+
 lazy val compileDependencies = Seq(
-  "org.apache.flink" %% "flink-scala" % "1.2.0",
-  "com.chuusai" %% "shapeless" % "2.3.2"
+  "org.apache.flink" %% "flink-scala" % versions.flink,
+  "com.chuusai" %% "shapeless" % versions.shapeless
 )
 
 lazy val testDependencies = Seq(
-  "org.scalatest" %% "scalatest" % "3.0.3",
-  "org.scalacheck" %% "scalacheck" % "1.13.5",
-  "com.github.alexarchambault" %% "scalacheck-shapeless_1.13" % "1.1.5",
-  "com.jsuereth" %% "scala-arm" % "2.0",
-  "org.ostermiller" % "utils" % "1.07.00"
+  "org.scalatest" %% "scalatest" % versions.scalatest,
+  "org.scalacheck" %% "scalacheck" % versions.scalacheck,
+  "com.github.alexarchambault" %% "scalacheck-shapeless_1.13" % versions.checkless,
+  "com.jsuereth" %% "scala-arm" % versions.scala_arm,
+  "org.ostermiller" % "utils" % versions.utils,
+  "org.slf4j" % "slf4j-nop" % versions.slf4j
 ).map(_ % "test")
 
 lazy val benchDependencies = Seq(
-  "com.storm-enroute" %% "scalameter" % "0.8.2"
+  "com.storm-enroute" %% "scalameter" % versions.scala_meter
 ).map(_ % "bench")
 
 lazy val commonSettings = Seq(
@@ -57,7 +71,7 @@ lazy val commonSettings = Seq(
   libraryDependencies ++= compileDependencies ++ testDependencies ++ benchDependencies,
   libraryDependencies ++= {
     if (scalaBinaryVersion.value.toDouble > 2.10) Seq.empty
-    else Seq(compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.patch))
+    else Seq(compilerPlugin("org.scalamacros" % "paradise" % versions.paradise cross CrossVersion.patch))
   }
 )
 

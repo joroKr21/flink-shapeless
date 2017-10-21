@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 package org.apache.flink
-package api.scala.typeutils
+package api.scala.derived.typeutils
 
 /**
  * A recursive object supporting the definition of inductive methods which don't cause a

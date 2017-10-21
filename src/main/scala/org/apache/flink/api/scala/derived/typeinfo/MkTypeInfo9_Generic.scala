@@ -14,22 +14,15 @@
  * limitations under the License.
  */
 package org.apache.flink
-package api.scala.typeutils
+package api.scala.derived.typeinfo
 
-/**
- * Interface for an injective (i.e. invertible) function.
- * Can be used to provide a `TypeInformation` instance for `A`
- * by injecting it into a `TypeInformation` instance for `B`.
- */
-trait Inject[A, B] extends (A => B) with Serializable {
-  def invert(b: B): A
-}
+import shapeless.Lazy
 
-/** [[Inject]] instances. */
-object Inject {
-  /** Creates an `Inject[A, B]` instance, given implicit conversions between `A` and `B`. */
-  def apply[A, B](implicit f: A => B, g: B => A): Inject[A, B] = new Inject[A, B] {
-    def apply(a: A) = f(a)
-    def invert(b: B) = g(b)
-  }
+/** Derived `TypeInformation` instances. */
+trait MkTypeInfo9_Generic {
+
+  /** Derives `TypeInformation` for [[A]]. */
+  implicit def mkGenericTypeInfo[A](
+    implicit mk: Lazy[MkGenericTypeInfo[A]]
+  ): MkTypeInfo[A] = MkTypeInfo(mk.value())
 }

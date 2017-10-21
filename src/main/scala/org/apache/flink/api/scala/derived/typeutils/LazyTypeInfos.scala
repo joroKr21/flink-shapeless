@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 package org.apache.flink
-package api.scala.derived
+package api.scala.derived.typeutils
 
 import api.common.typeinfo.TypeInformation
 
@@ -27,29 +27,21 @@ import scala.annotation.implicitNotFound
  * but lazy and more efficient.
  */
 @implicitNotFound("could not lift TypeInformation to type ${A}")
-trait TypeInfos[A] extends (() => List[TypeInformation[_]]) with Serializable
+sealed trait LazyTypeInfos[A] extends (() => List[TypeInformation[_]]) with Serializable
 
-/** [[TypeInfos]] instances. */
-object TypeInfos {
-  def apply[A: TypeInfos]: TypeInfos[A] = implicitly
+/** Implicit `LazyTypeInfos` instances. */
+object LazyTypeInfos {
+  private def apply[A](infos: => List[TypeInformation[_]]) =
+    new LazyTypeInfos[A] { def apply = infos }
 
-  implicit val hNil: TypeInfos[HNil] = new TypeInfos[HNil] {
-    def apply = Nil
-  }
-
-  implicit val cNil: TypeInfos[CNil] = new TypeInfos[CNil] {
-    def apply = Nil
-  }
+  implicit val hNil: LazyTypeInfos[HNil] = apply(Nil)
+  implicit val cNil: LazyTypeInfos[CNil] = apply(Nil)
 
   implicit def hCons[H, T <: HList](
-    implicit head: Lazy[TypeInformation[H]], tail: TypeInfos[T]
-  ): TypeInfos[H :: T] = new TypeInfos[H :: T] {
-    def apply = head.value :: tail()
-  }
+    implicit tiH: Lazy[TypeInformation[H]], tiT: LazyTypeInfos[T]
+  ): LazyTypeInfos[H :: T] = apply(tiH.value :: tiT())
 
-  implicit def cCons[H, T <: Coproduct](
-    implicit head: Lazy[TypeInformation[H]], tail: TypeInfos[T]
-  ): TypeInfos[H :+: T] = new TypeInfos[H :+: T] {
-    def apply = head.value :: tail()
-  }
+  implicit def cCons[L, R <: Coproduct](
+    implicit tiL: Lazy[TypeInformation[L]], tiR: LazyTypeInfos[R]
+  ): LazyTypeInfos[L :+: R] = apply(tiL.value :: tiR())
 }

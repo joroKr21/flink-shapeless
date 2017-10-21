@@ -15,18 +15,19 @@
  */
 package org.apache.flink
 
-import api.common.typeinfo.TypeInformation
+import api.common.typeinfo._
+import api.scala._
+import api.scala.derived
+import api.scala.derived.typeutils._
+
 import org.scalacheck._
 
 import scala.util._
-//import scala.beans._
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
 import java.awt.Color
-import java.math
-import java.{lang => boxed}
-import java.{util => jutil}
+import java.lang.reflect.Type
 
 /** Data definitions. Must be separate due to SI-7046. */
 object ADTsTest {
@@ -82,24 +83,50 @@ object ADTsTest {
       Arbitrary(for {
         x <- arb[Int]
         b <- arb[Boolean]
+        pojo = new Pojo
       } yield {
-        val pojo = new Pojo
         pojo.x = x
         pojo.b = b
         pojo
       })
   }
 
+  @derived.TypeInfo(AnnFactory)
+  case class Ann(i: Int, s: String)
+  object AnnFactory extends TypeInfoFactory[Ann] {
+    import derived.semiauto._
+    def createTypeInfo(tpe: Type, params: java.util.Map[String, TypeInformation[_]]) =
+      InjectTypeInfo(typeInfo[(Int, String)])(Inject(ann => ann.i -> ann.s, Ann.tupled))
+  }
+
   // Arbitrary Java primitives
-  implicit val arbNull:         Arbitrary[Null]            = Arbitrary(const(null))
-  implicit val arbBoxedBoolean: Arbitrary[boxed.Boolean]   = Arbitrary(arb[Boolean].map(b => b))
-  implicit val arbBoxedByte:    Arbitrary[boxed.Byte]      = Arbitrary(arb[Byte].map(b => b))
-  implicit val arbBoxedShort:   Arbitrary[boxed.Short]     = Arbitrary(arb[Short].map(s => s))
-  implicit val arbBoxedInt:     Arbitrary[boxed.Integer]   = Arbitrary(arb[Int].map(i => i))
-  implicit val arbBoxedLong:    Arbitrary[boxed.Long]      = Arbitrary(arb[Long].map(l => l))
-  implicit val arbBoxedFloat:   Arbitrary[boxed.Float]     = Arbitrary(arb[Float].map(f => f))
-  implicit val arbBoxedDouble:  Arbitrary[boxed.Double]    = Arbitrary(arb[Double].map(d => d))
-  implicit val arbBoxedChar:    Arbitrary[boxed.Character] = Arbitrary(arb[Char].map(c => c))
+
+  implicit val arbNull: Arbitrary[Null] =
+    Arbitrary(const(null))
+
+  implicit val arbJavaBoolean: Arbitrary[java.lang.Boolean] =
+    Arbitrary(arb[Boolean].map(b => b))
+
+  implicit val arbJavaByte: Arbitrary[java.lang.Byte] =
+    Arbitrary(arb[Byte].map(b => b))
+
+  implicit val arbJavaShort: Arbitrary[java.lang.Short] =
+    Arbitrary(arb[Short].map(s => s))
+
+  implicit val arbJavaInt: Arbitrary[java.lang.Integer] =
+    Arbitrary(arb[Int].map(i => i))
+
+  implicit val arbJavaLong: Arbitrary[java.lang.Long] =
+    Arbitrary(arb[Long].map(l => l))
+
+  implicit val arbJavaFloat: Arbitrary[java.lang.Float] =
+    Arbitrary(arb[Float].map(f => f))
+
+  implicit val arbJavaDouble: Arbitrary[java.lang.Double] =
+    Arbitrary(arb[Double].map(d => d))
+
+  implicit val arbJavaChar: Arbitrary[java.lang.Character] =
+    Arbitrary(arb[Char].map(c => c))
 
   implicit val arbColor: Arbitrary[Color] = {
     val shade = choose(0, 255)
@@ -107,19 +134,19 @@ object ADTsTest {
       yield new Color(r, g, b, a))
   }
 
-  implicit val arbJavaBigInt: Arbitrary[math.BigInteger] =
+  implicit val arbJavaBigInt: Arbitrary[java.math.BigInteger] =
     Arbitrary(for (int <- arb[BigInt]) yield int.bigInteger)
 
-  implicit val arbJavaBigDec: Arbitrary[math.BigDecimal] =
+  implicit val arbJavaBigDec: Arbitrary[java.math.BigDecimal] =
     Arbitrary(for (dec <- arb[BigDecimal]) yield dec.bigDecimal)
 
-  implicit def arbJavaList[A: Arbitrary]: Arbitrary[jutil.List[A]] =
+  implicit def arbJavaList[A: Arbitrary]: Arbitrary[java.util.List[A]] =
     Arbitrary(arb[mutable.Buffer[A]].map(_.asJava))
 
-  implicit def arbJavaSet[A: Arbitrary]: Arbitrary[jutil.Set[A]] =
+  implicit def arbJavaSet[A: Arbitrary]: Arbitrary[java.util.Set[A]] =
     Arbitrary(arb[mutable.Set[A]].map(_.asJava))
 
-  implicit def arbJavaMap[K: Arbitrary, V: Arbitrary]: Arbitrary[jutil.Map[K, V]] =
+  implicit def arbJavaMap[K: Arbitrary, V: Arbitrary]: Arbitrary[java.util.Map[K, V]] =
     Arbitrary(arb[mutable.Map[K, V]].map(_.asJava))
 
   /** [[Exception]] with structural equality. */

@@ -14,25 +14,27 @@
  * limitations under the License.
  */
 package org.apache.flink
-package api.scala.derived
+package api.scala.derived.typeutils
 
 import shapeless._
 
 import scala.annotation.implicitNotFound
 
-/** Type class witnessing that [[T]] is a recursive Algebraic Data Type (ADT). */
-@implicitNotFound("could not prove that ${T} is a Recursive data type")
-trait Recursive[T] extends Serializable
+/** Equivalent to `ToList[T, E]`, but serializable and more efficient. */
+@implicitNotFound("could not convert ${L} to a List[${E}]")
+sealed trait AsList[L <: HList, E] extends (L => List[E]) with Serializable
 
-/** Implicit [[Recursive]] instances. */
-object Recursive {
-  // Since this type class has no methods, a singleton instance suffices.
-  private val instance: Recursive[_] = new Recursive[Any] { }
+/** Implicit `AsList` instances. */
+object AsList {
+  private def apply[L <: HList, E](as: L => List[E]) =
+    new AsList[L, E] { def apply(l: L) = as(l) }
 
-  /** Summons an implicit [[Recursive]] instance in scope. */
-  def apply[T: Recursive]: Recursive[T] = implicitly
+  implicit def hNil[E]: AsList[HNil, E] =
+    apply(_ => Nil)
 
-  implicit def adt[T, R](
-    implicit gen: Generic.Aux[T, R], emb: Embedded[R, T]
-  ): Recursive[T] = instance.asInstanceOf[Recursive[T]]
+  implicit def hCons[H, T <: HList, E](
+    implicit alT: AsList[T, E], ev: H <:< E
+  ): AsList[H :: T, E] = apply {
+    case h :: t => h :: alT(t)
+  }
 }

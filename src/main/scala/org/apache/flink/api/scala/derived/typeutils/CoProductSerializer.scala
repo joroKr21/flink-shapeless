@@ -14,15 +14,17 @@
  * limitations under the License.
  */
 package org.apache.flink
-package api.scala.typeutils
+package api.scala.derived.typeutils
 
-import api.common.typeutils.TypeSerializer
-import core.memory.DataInputView
-import core.memory.DataOutputView
+import api.common.typeutils._
+import core.memory._
 
 /** A [[TypeSerializer]] for recursive co-product types (sealed traits). */
 case class CoProductSerializer[T](var variants: Seq[TypeSerializer[T]] = Seq.empty)
     (which: T => Int) extends TypeSerializer[T] with InductiveObject {
+
+  import CompatibilityResult._
+  @transient private var snapshot: InductiveConfigSnapshot = _
 
   def getLength: Int = -1
 
@@ -69,4 +71,25 @@ case class CoProductSerializer[T](var variants: Seq[TypeSerializer[T]] = Seq.emp
   override def toString: String = inductive("this") {
     s"CoproductSerializer(${variants.mkString(", ")})"
   }
+
+  override def snapshotConfiguration: InductiveConfigSnapshot = inductive(snapshot) {
+    snapshot = new InductiveConfigSnapshot
+    snapshot.components = for (v <- variants) yield v -> v.snapshotConfiguration
+    snapshot
+  }
+
+  override def ensureCompatibility(
+    snapshot: TypeSerializerConfigSnapshot
+  ): CompatibilityResult[T] = inductive(compatible[T])(snapshot match {
+    case inductive: InductiveConfigSnapshot =>
+      val dummy = classOf[UnloadableDummyTypeSerializer[_]]
+      val compat = for (((prev, config), next) <- inductive.components zip variants)
+        yield CompatibilityUtil.resolveCompatibilityResult(prev, dummy, config, next)
+      if (compat.exists(_.isRequiresMigration)) {
+        if (compat.exists(_.getConvertDeserializer == null)) requiresMigration[T]
+        else requiresMigration(CoProductSerializer(for (f <- compat)
+          yield new TypeDeserializerAdapter(f.getConvertDeserializer))(which))
+      } else compatible[T]
+    case _ => requiresMigration[T]
+  })
 }

@@ -52,7 +52,7 @@ object TypeInfoBench extends Bench.OfflineReport {
   }
 
   performance of "Flink-Shapeless" in {
-    import FlinkShapeless._
+    import derived.auto._
     bench [NTree[Int]]
     bench [BTree[Int]]
   }

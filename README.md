@@ -15,7 +15,7 @@ The primary use case of Flink-Shapeless is to enable custom implicit
 // Import Flink's Scala API as usual
 import org.apache.flink.api.scala._
 // Replace the macro-based TypeInformation provider
-import FlinkShapeless._
+import derived.auto._
 
 // Override TypeInformation[String]
 implicit val strTypeInfo = MyASCIIStringTypeInfo

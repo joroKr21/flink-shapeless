@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 package org.apache.flink
-package api.scala.typeutils
+package api.scala.derived.typeutils
 
 import api.common.ExecutionConfig
 import api.common.typeinfo.TypeInformation

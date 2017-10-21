@@ -14,16 +14,18 @@
  * limitations under the License.
  */
 package org.apache.flink
-package api.scala.typeutils
+package api.scala.derived.typeutils
 
-import api.common.typeutils.TypeSerializer
-import core.memory.DataInputView
-import core.memory.DataOutputView
+import api.common.typeutils._
+import core.memory._
 
 /** A [[TypeSerializer]] for recursive product types (case classes). */
 case class ProductSerializer[P](var fields: Seq[TypeSerializer[Any]] = Seq.empty)
     (from: Seq[Any] => P, to: P => Seq[Any])
     extends TypeSerializer[P] with InductiveObject {
+
+  import CompatibilityResult._
+  @transient private var snapshot: InductiveConfigSnapshot = _
 
   def isImmutableType: Boolean = inductive(true) {
     fields.forall(_.isImmutableType)
@@ -67,4 +69,25 @@ case class ProductSerializer[P](var fields: Seq[TypeSerializer[Any]] = Seq.empty
   override def toString: String = inductive("this") {
     s"ProductSerializer(${fields.mkString(", ")})"
   }
+
+  override def snapshotConfiguration: InductiveConfigSnapshot = inductive(snapshot) {
+    snapshot = new InductiveConfigSnapshot
+    snapshot.components = for (f <- fields) yield f -> f.snapshotConfiguration
+    snapshot
+  }
+
+  override def ensureCompatibility(
+    snapshot: TypeSerializerConfigSnapshot
+  ): CompatibilityResult[P] = inductive(compatible[P])(snapshot match {
+    case inductive: InductiveConfigSnapshot =>
+      val dummy = classOf[UnloadableDummyTypeSerializer[_]]
+      val compat = for (((prev, config), next) <- inductive.components zip fields)
+        yield CompatibilityUtil.resolveCompatibilityResult[Any](prev, dummy, config, next)
+      if (compat.exists(_.isRequiresMigration)) {
+        if (compat.exists(_.getConvertDeserializer == null)) requiresMigration[P]
+        else requiresMigration(ProductSerializer(for (f <- compat)
+          yield new TypeDeserializerAdapter(f.getConvertDeserializer))(from, to))
+      } else compatible[P]
+    case _ => requiresMigration[P]
+  })
 }

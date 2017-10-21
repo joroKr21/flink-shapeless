@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 package org.apache.flink
-package api.scala.typeutils
+package api.scala.derived.typeutils
 
 import api.common.typeutils.TypeSerializer
-import core.memory.DataInputView
-import core.memory.DataOutputView
+import core.memory._
+import org.apache.flink.api.common.typeutils.CompatibilityResult
+import org.apache.flink.api.common.typeutils.TypeDeserializerAdapter
+import org.apache.flink.api.common.typeutils.TypeSerializerConfigSnapshot
 
 /** A [[TypeSerializer]] for [[A]] based on an injection into [[B]]. */
 case class InjectSerializer[A, B](underlying: TypeSerializer[B])
@@ -53,4 +55,19 @@ case class InjectSerializer[A, B](underlying: TypeSerializer[B])
 
   def deserialize(reuse: A, source: DataInputView): A =
     deserialize(source)
+
+  def snapshotConfiguration: TypeSerializerConfigSnapshot =
+    underlying.snapshotConfiguration
+
+  def ensureCompatibility(snapshot: TypeSerializerConfigSnapshot): CompatibilityResult[A] = {
+    import CompatibilityResult._
+    val compat = underlying.ensureCompatibility(snapshot)
+    if (compat.isRequiresMigration) {
+      val deserializer = compat.getConvertDeserializer
+      if (deserializer == null) requiresMigration[A]
+      else requiresMigration(InjectSerializer(new TypeDeserializerAdapter(deserializer))(inj))
+    } else {
+      compatible[A]
+    }
+  }
 }

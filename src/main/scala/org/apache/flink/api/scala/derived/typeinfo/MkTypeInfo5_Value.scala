@@ -14,6 +14,17 @@
  * limitations under the License.
  */
 package org.apache.flink
-package api.scala
+package api.scala.derived.typeinfo
 
-object FlinkShapeless extends typeinfo.Instances
+import api.java.typeutils.ValueTypeInfo
+import types.Value
+
+import scala.reflect.ClassTag
+
+/** `TypeInformation` instances for `Value` types. */
+trait MkTypeInfo5_Value extends MkTypeInfo6_Singleton {
+
+  /** Creates `TypeInformation` for the `Value` type `V`. */
+  implicit def mkValueTypeInfo[V <: Value](implicit tag: ClassTag[V]): MkTypeInfo[V] =
+    MkTypeInfo(new ValueTypeInfo(tag.runtimeClass.asInstanceOf[Class[V]]))
+}
