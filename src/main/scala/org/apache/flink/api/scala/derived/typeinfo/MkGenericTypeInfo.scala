@@ -41,7 +41,7 @@ object MkGenericTypeInfo {
     unzip: UnzipFields.Aux[R, K, V],
     record: ZipWithKeys.Aux[K, V, R],
     vector: ToTraversable.Aux[K, Vector, Symbol],
-    infos: LazyTypeInfos[V],
+    infos: TypeInfos[V],
     list: AsList[R, Any],
     tag: ClassTag[P]
   ): MkGenericTypeInfo[P] = new MkGenericTypeInfo[P] with InductiveObject {
@@ -74,10 +74,10 @@ object MkGenericTypeInfo {
   implicit def mkCoproductTypeInfo[C, R <: Coproduct](
     implicit
     gen: Generic.Aux[C, R],
-    infos: LazyTypeInfos[R],
+    infos: TypeInfos[R],
     index: Which[R],
     tag: ClassTag[C]
   ): MkGenericTypeInfo[C] = new MkGenericTypeInfo[C] {
-    def apply = CoProductTypeInfo(infos().toVector)(index.compose(gen.to))
+    def apply = new CoProductTypeInfo(infos().toVector)(index.compose(gen.to))
   }
 }

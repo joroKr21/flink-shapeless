@@ -27,21 +27,22 @@ import scala.annotation.implicitNotFound
  * but lazy and more efficient.
  */
 @implicitNotFound("could not lift TypeInformation to type ${A}")
-sealed trait LazyTypeInfos[A] extends (() => List[TypeInformation[_]]) with Serializable
+sealed trait TypeInfos[A] extends (() => List[TypeInformation[_]]) with Serializable
 
 /** Implicit `LazyTypeInfos` instances. */
-object LazyTypeInfos {
+object TypeInfos {
   private def apply[A](infos: => List[TypeInformation[_]]) =
-    new LazyTypeInfos[A] { def apply = infos }
+    new TypeInfos[A] { def apply = infos }
 
-  implicit val hNil: LazyTypeInfos[HNil] = apply(Nil)
-  implicit val cNil: LazyTypeInfos[CNil] = apply(Nil)
+  implicit val hNil: TypeInfos[HNil] = apply(Nil)
+  implicit val cNil: TypeInfos[CNil] = apply(Nil)
 
   implicit def hCons[H, T <: HList](
-    implicit tiH: Lazy[TypeInformation[H]], tiT: LazyTypeInfos[T]
-  ): LazyTypeInfos[H :: T] = apply(tiH.value :: tiT())
+    implicit tiH: Lazy[TypeInformation[H]], tiT: TypeInfos[T]
+  ): TypeInfos[H :: T] = apply(tiH.value :: tiT())
 
+  // Co-products don't need to be lazy.
   implicit def cCons[L, R <: Coproduct](
-    implicit tiL: Lazy[TypeInformation[L]], tiR: LazyTypeInfos[R]
-  ): LazyTypeInfos[L :+: R] = apply(tiL.value :: tiR())
+    implicit tiL: TypeInformation[L], tiR: TypeInfos[R]
+  ): TypeInfos[L :+: R] = apply(tiL :: tiR())
 }

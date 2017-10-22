@@ -23,10 +23,11 @@ import api.common.typeutils.TypeSerializer
 import scala.reflect.ClassTag
 
 /** [[TypeInformation]] for recursive co-product types (sealed traits). */
-case class CoProductTypeInfo[T](variants: Seq[TypeInformation[_]])
+class CoProductTypeInfo[T](vs: => Seq[TypeInformation[_]])
     (which: T => Int)(implicit tag: ClassTag[T])
     extends TypeInformation[T] with InductiveObject {
 
+  private lazy val variants = vs
   @transient private var serializer: CoProductSerializer[T] = _
 
   def isBasicType: Boolean = false
@@ -46,6 +47,15 @@ case class CoProductTypeInfo[T](variants: Seq[TypeInformation[_]])
         yield v.createSerializer(config).asInstanceOf[TypeSerializer[T]]
       serializer
     }
+
+  def canEqual(that: Any): Boolean =
+    that.isInstanceOf[CoProductTypeInfo[_]]
+
+  override def equals(other: Any): Boolean = other match {
+    case that: CoProductTypeInfo[_] =>
+      (this eq that) || (that canEqual this) && this.variants == that.variants
+    case _ => false
+  }
 
   override def hashCode: Int =
     inductive(0)(31 * variants.##)
