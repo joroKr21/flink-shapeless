@@ -21,20 +21,20 @@ import api.scala.derived.typeinfo.MkTypeInfo
 
 import shapeless._
 
-/** Implicit [[TypeInformation]] instances. */
+/** Implicit `TypeInformation` instances. */
 object semiauto {
 
   /**
-   * If type [[A]] is a (possibly recursive) Algebraic Data Type (ADT), automatically derives a
-   * [[TypeInformation]] instance for it.
+   * If type `A` is a (possibly recursive) Algebraic Data Type (ADT), automatically derives a
+   * `TypeInformation` instance for it.
    *
    * Other implicit instances in scope take higher priority except those provided by
    * [[api.scala.createTypeInformation]] (the macro based approach), because it has a default
    * catch-all case based on runtime reflection.
    *
-   * @param mk The derived [[TypeInformation]] provider ([[Strict]] helps avoid divergence).
+   * @param mk The derived `TypeInformation` provider (`Strict` helps avoid divergence).
    * @tparam A A (possibly recursive) Algebraic Data Type (ADT).
-   * @return The derived [[TypeInformation]] instance.
+   * @return The derived `TypeInformation` instance.
    */
   // Derive only when no other implicit instance is in scope.
   def typeInfo[A](implicit mk: Strict[MkTypeInfo[A]]): TypeInformation[A] = mk.value()

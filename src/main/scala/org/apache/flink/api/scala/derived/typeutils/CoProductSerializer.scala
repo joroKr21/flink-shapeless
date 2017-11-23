@@ -19,7 +19,7 @@ package api.scala.derived.typeutils
 import api.common.typeutils._
 import core.memory._
 
-/** A [[TypeSerializer]] for recursive co-product types (sealed traits). */
+/** A `TypeSerializer` for recursive co-product types (sealed traits). */
 case class CoProductSerializer[T](var variants: Seq[TypeSerializer[T]] = Seq.empty)
     (which: T => Int) extends TypeSerializer[T] with InductiveObject {
 

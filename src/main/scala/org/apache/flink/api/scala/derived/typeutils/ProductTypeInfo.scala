@@ -22,7 +22,7 @@ import api.common.typeutils.TypeSerializer
 
 import scala.reflect.ClassTag
 
-/** [[TypeInformation]] for recursive product types (case classes). */
+/** `TypeInformation` for recursive product types (case classes). */
 class ProductTypeInfo[P](fs: => Seq[TypeInformation[_]])
     (from: Seq[Any] => P, to: P => Seq[Any])(implicit tag: ClassTag[P])
     extends TypeInformation[P] with InductiveObject {

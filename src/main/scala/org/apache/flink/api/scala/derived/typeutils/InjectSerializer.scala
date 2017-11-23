@@ -22,7 +22,7 @@ import org.apache.flink.api.common.typeutils.CompatibilityResult
 import org.apache.flink.api.common.typeutils.TypeDeserializerAdapter
 import org.apache.flink.api.common.typeutils.TypeSerializerConfigSnapshot
 
-/** A [[TypeSerializer]] for [[A]] based on an injection into [[B]]. */
+/** A `TypeSerializer` for `A` based on an injection into `B`. */
 case class InjectSerializer[A, B](underlying: TypeSerializer[B])
     (inj: Inject[A, B]) extends TypeSerializer[A] {
 

@@ -22,7 +22,7 @@ import api.common.typeutils.TypeSerializer
 
 import scala.reflect.ClassTag
 
-/** [[TypeInformation]] for recursive co-product types (sealed traits). */
+/** `TypeInformation` for recursive co-product types (sealed traits). */
 class CoProductTypeInfo[T](vs: => Seq[TypeInformation[_]])
     (which: T => Int)(implicit tag: ClassTag[T])
     extends TypeInformation[T] with InductiveObject {

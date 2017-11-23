@@ -31,7 +31,7 @@ import scala.reflect._
 /** `TypeInformation` instances for `Array`, `Traversable` and `Map`. */
 trait MkTypeInfo4_Traversable extends MkTypeInfo5_Value {
 
-  /** Creates `TypeInformation` for a (non-primitive) [[Array]]. */
+  /** Creates `TypeInformation` for a (non-primitive) `Array`. */
   implicit def mkArrayTypeInfo[E](implicit tiE: TypeInformation[E]): MkTypeInfo[Array[E]] =
     MkTypeInfo(ObjectArrayTypeInfo.getInfoFor(tiE))
 

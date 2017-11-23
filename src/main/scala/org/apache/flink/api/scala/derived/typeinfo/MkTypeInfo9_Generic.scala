@@ -21,7 +21,7 @@ import shapeless.Lazy
 /** Derived `TypeInformation` instances. */
 trait MkTypeInfo9_Generic {
 
-  /** Derives `TypeInformation` for [[A]]. */
+  /** Derives `TypeInformation` for `A`. */
   implicit def mkGenericTypeInfo[A](
     implicit mk: Lazy[MkGenericTypeInfo[A]]
   ): MkTypeInfo[A] = MkTypeInfo(mk.value())

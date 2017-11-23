@@ -22,7 +22,7 @@ import api.common.typeutils.TypeSerializer
 
 import scala.reflect.ClassTag
 
-/** [[TypeInformation]] for type [[A]] based on an injection into type [[B]]. */
+/** `TypeInformation` for type `A` based on an injection into type `B`. */
 case class InjectTypeInfo[A, B](underlying: TypeInformation[B])
     (inj: Inject[A, B])(implicit tag: ClassTag[A]) extends TypeInformation[A] {
 

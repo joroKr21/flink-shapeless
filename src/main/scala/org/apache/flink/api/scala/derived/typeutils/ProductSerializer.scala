@@ -19,7 +19,7 @@ package api.scala.derived.typeutils
 import api.common.typeutils._
 import core.memory._
 
-/** A [[TypeSerializer]] for recursive product types (case classes). */
+/** A `TypeSerializer` for recursive product types (case classes). */
 case class ProductSerializer[P](var fields: Seq[TypeSerializer[Any]] = Seq.empty)
     (from: Seq[Any] => P, to: P => Seq[Any])
     extends TypeSerializer[P] with InductiveObject {

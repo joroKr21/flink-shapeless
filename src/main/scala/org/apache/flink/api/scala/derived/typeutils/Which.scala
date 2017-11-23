@@ -20,7 +20,7 @@ import shapeless._
 
 import scala.annotation.implicitNotFound
 
-/** Type class for tagging the co-product type [[C]] with an integer index. */
+/** Type class for tagging the co-product type `C` with an integer index. */
 @implicitNotFound("could not derive an indexing function for type ${C}")
 sealed trait Which[C <: Coproduct] extends (C => Int) with Serializable
 
