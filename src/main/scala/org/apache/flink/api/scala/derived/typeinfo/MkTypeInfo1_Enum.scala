@@ -24,16 +24,16 @@ import shapeless.Witness
 import scala.reflect.ClassTag
 
 /** `TypeInformation` instances for Java and Scala enums. */
-trait MkTypeInfo1_Enum extends MkTypeInfo2_Option_Either_Try {
+private[typeinfo] abstract class MkTypeInfo1_Enum extends MkTypeInfo2_Option_Either_Try {
 
   /** Creates `TypeInformation` for the Java enum `E`. */
   implicit def mkEnumTypeInfo[E <: Enum[E]](implicit tag: ClassTag[E]): MkTypeInfo[E] =
-    MkTypeInfo(new EnumTypeInfo(tag.runtimeClass.asInstanceOf[Class[E]]))
+    this(new EnumTypeInfo(tag.runtimeClass.asInstanceOf[Class[E]]))
 
   /** Creates `TypeInformation` for the Scala enum `E`. */
   implicit def mkEnumValueTypeInfo[E <: Enumeration](
     implicit enum: Witness.Aux[E]
-  ): MkTypeInfo[E#Value] = MkTypeInfo {
+  ): MkTypeInfo[E#Value] = this {
     new EnumValueTypeInfo(enum.value, classOf)
   }
 }

@@ -19,62 +19,62 @@ package api.scala.derived.typeinfo
 import api.common.typeinfo._
 
 /** `TypeInformation` instances for basic (primitive) arrays. */
-trait MkTypeInfo3_Array extends MkTypeInfo4_Traversable {
+private[typeinfo] abstract class MkTypeInfo3_Array extends MkTypeInfo4_Traversable {
   import BasicArrayTypeInfo._
   import PrimitiveArrayTypeInfo._
 
   // Java primitives
 
   implicit val mkJavaBooleanArrayTypeInfo: MkTypeInfo[Array[java.lang.Boolean]] =
-    MkTypeInfo(BOOLEAN_ARRAY_TYPE_INFO)
+    this(BOOLEAN_ARRAY_TYPE_INFO)
 
   implicit val mkJavaByteArrayTypeInfo: MkTypeInfo[Array[java.lang.Byte]] =
-    MkTypeInfo(BYTE_ARRAY_TYPE_INFO)
+    this(BYTE_ARRAY_TYPE_INFO)
 
   implicit val mkJavaShortArrayTypeInfo: MkTypeInfo[Array[java.lang.Short]] =
-    MkTypeInfo(SHORT_ARRAY_TYPE_INFO)
+    this(SHORT_ARRAY_TYPE_INFO)
 
   implicit val mkJavaIntArrayTypeInfo: MkTypeInfo[Array[java.lang.Integer]] =
-    MkTypeInfo(INT_ARRAY_TYPE_INFO)
+    this(INT_ARRAY_TYPE_INFO)
 
   implicit val mkJavaLongArrayTypeInfo: MkTypeInfo[Array[java.lang.Long]] =
-    MkTypeInfo(LONG_ARRAY_TYPE_INFO)
+    this(LONG_ARRAY_TYPE_INFO)
 
   implicit val mkJavaFloatArrayTypeInfo: MkTypeInfo[Array[java.lang.Float]] =
-    MkTypeInfo(FLOAT_ARRAY_TYPE_INFO)
+    this(FLOAT_ARRAY_TYPE_INFO)
 
   implicit val mkJavaDoubleArrayTypeInfo: MkTypeInfo[Array[java.lang.Double]] =
-    MkTypeInfo(DOUBLE_ARRAY_TYPE_INFO)
+    this(DOUBLE_ARRAY_TYPE_INFO)
 
   implicit val mkJavaCharArrayTypeInfo: MkTypeInfo[Array[java.lang.Character]] =
-    MkTypeInfo(CHAR_ARRAY_TYPE_INFO)
+    this(CHAR_ARRAY_TYPE_INFO)
 
   // Scala primitives
 
   implicit val mkBooleanArrayTypeInfo: MkTypeInfo[Array[Boolean]] =
-    MkTypeInfo(BOOLEAN_PRIMITIVE_ARRAY_TYPE_INFO)
+    this(BOOLEAN_PRIMITIVE_ARRAY_TYPE_INFO)
 
   implicit val mkByteArrayTypeInfo: MkTypeInfo[Array[Byte]] =
-    MkTypeInfo(BYTE_PRIMITIVE_ARRAY_TYPE_INFO)
+    this(BYTE_PRIMITIVE_ARRAY_TYPE_INFO)
 
   implicit val mkShortArrayTypeInfo: MkTypeInfo[Array[Short]] =
-    MkTypeInfo(SHORT_PRIMITIVE_ARRAY_TYPE_INFO)
+    this(SHORT_PRIMITIVE_ARRAY_TYPE_INFO)
 
   implicit val mkIntArrayTypeInfo: MkTypeInfo[Array[Int]] =
-    MkTypeInfo(INT_PRIMITIVE_ARRAY_TYPE_INFO)
+    this(INT_PRIMITIVE_ARRAY_TYPE_INFO)
 
   implicit val mkLongArrayTypeInfo: MkTypeInfo[Array[Long]] =
-    MkTypeInfo(LONG_PRIMITIVE_ARRAY_TYPE_INFO)
+    this(LONG_PRIMITIVE_ARRAY_TYPE_INFO)
 
   implicit val mkFloatArrayTypeInfo: MkTypeInfo[Array[Float]] =
-    MkTypeInfo(FLOAT_PRIMITIVE_ARRAY_TYPE_INFO)
+    this(FLOAT_PRIMITIVE_ARRAY_TYPE_INFO)
 
   implicit val mkDoubleArrayTypeInfo: MkTypeInfo[Array[Double]] =
-    MkTypeInfo(DOUBLE_PRIMITIVE_ARRAY_TYPE_INFO)
+    this(DOUBLE_PRIMITIVE_ARRAY_TYPE_INFO)
 
   implicit val mkCharArrayTypeInfo: MkTypeInfo[Array[Char]] =
-    MkTypeInfo(CHAR_PRIMITIVE_ARRAY_TYPE_INFO)
+    this(CHAR_PRIMITIVE_ARRAY_TYPE_INFO)
 
   implicit val mkStringArrayTypeInfo: MkTypeInfo[Array[String]] =
-    MkTypeInfo(STRING_ARRAY_TYPE_INFO)
+    this(STRING_ARRAY_TYPE_INFO)
 }

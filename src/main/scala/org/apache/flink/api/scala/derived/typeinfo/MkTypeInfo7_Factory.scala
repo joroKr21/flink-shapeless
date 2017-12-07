@@ -23,12 +23,12 @@ import shapeless.Annotation
 import scala.reflect.ClassTag
 
 /** `TypeInformation` instances based on the `TypeInfo` annotation. */
-trait MkTypeInfo7_Factory extends MkTypeInfo8_Inject {
+private[typeinfo] abstract class MkTypeInfo7_Factory extends MkTypeInfo8_Inject {
 
   /** Creates `TypeInformation` for type `A` if it's annotated with `TypeInfo`. */
   implicit def mkFactoryTypeInfo[A](
     implicit ann: Annotation[TypeInfo[A], A], tag: ClassTag[A]
-  ): MkTypeInfo[A] = MkTypeInfo {
+  ): MkTypeInfo[A] = this {
     ann().factory.createTypeInfo(tag.runtimeClass, new java.util.HashMap)
   }
 }

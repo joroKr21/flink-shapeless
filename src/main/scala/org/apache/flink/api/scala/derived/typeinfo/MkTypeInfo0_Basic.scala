@@ -23,81 +23,81 @@ import api.scala.derived.typeutils._
 import scala.reflect.classTag
 
 /** Basic (primitive) `TypeInformation` instances. */
-trait MkTypeInfo0_Basic extends MkTypeInfo1_Enum {
+private[typeinfo] abstract class MkTypeInfo0_Basic extends MkTypeInfo1_Enum {
   private val unitTypeInfo = new UnitTypeInfo
 
   // Java primitives
 
   implicit val mkJavaBooleanTypeInfo: MkTypeInfo[java.lang.Boolean] =
-    MkTypeInfo(BOOLEAN_TYPE_INFO)
+    this(BOOLEAN_TYPE_INFO)
 
   implicit val mkJavaByteTypeInfo: MkTypeInfo[java.lang.Byte] =
-    MkTypeInfo(BYTE_TYPE_INFO)
+    this(BYTE_TYPE_INFO)
 
   implicit val mkJavaShortTypeInfo: MkTypeInfo[java.lang.Short] =
-    MkTypeInfo(SHORT_TYPE_INFO)
+    this(SHORT_TYPE_INFO)
 
   implicit val mkJavaIntTypeInfo: MkTypeInfo[java.lang.Integer] =
-    MkTypeInfo(INT_TYPE_INFO)
+    this(INT_TYPE_INFO)
 
   implicit val mkJavaLongTypeInfo: MkTypeInfo[java.lang.Long] =
-    MkTypeInfo(LONG_TYPE_INFO)
+    this(LONG_TYPE_INFO)
 
   implicit val mkJavaFloatTypeInfo: MkTypeInfo[java.lang.Float] =
-    MkTypeInfo(FLOAT_TYPE_INFO)
+    this(FLOAT_TYPE_INFO)
 
   implicit val mkJavaDoubleTypeInfo: MkTypeInfo[java.lang.Double] =
-    MkTypeInfo(DOUBLE_TYPE_INFO)
+    this(DOUBLE_TYPE_INFO)
 
   implicit val mkJavaCharTypeInfo: MkTypeInfo[java.lang.Character] =
-    MkTypeInfo(CHAR_TYPE_INFO)
+    this(CHAR_TYPE_INFO)
 
   implicit val mkJavaBigIntTypeInfo: MkTypeInfo[java.math.BigInteger] =
-    MkTypeInfo(BIG_INT_TYPE_INFO)
+    this(BIG_INT_TYPE_INFO)
 
   implicit val mkJavaBigDecTypeInfo: MkTypeInfo[java.math.BigDecimal] =
-    MkTypeInfo(BIG_DEC_TYPE_INFO)
+    this(BIG_DEC_TYPE_INFO)
 
   implicit val mkVoidTypeInfo: MkTypeInfo[java.lang.Void] =
-    MkTypeInfo(VOID_TYPE_INFO)
+    this(VOID_TYPE_INFO)
 
   implicit val mkDateTypeInfo: MkTypeInfo[java.util.Date] =
-    MkTypeInfo(DATE_TYPE_INFO)
+    this(DATE_TYPE_INFO)
 
   // Scala primitives
 
   implicit val mkNothingTypeInfo: MkTypeInfo[Nothing] =
-    MkTypeInfo[Nothing](new ScalaNothingTypeInfo)
+    apply[Nothing](new ScalaNothingTypeInfo)
 
   implicit val mkUnitTypeInfo: MkTypeInfo[Unit] =
-    MkTypeInfo(unitTypeInfo)
+    this(unitTypeInfo)
 
   implicit val mkBooleanTypeInfo: MkTypeInfo[Boolean] =
-    MkTypeInfo(getInfoFor(classOf[Boolean]))
+    this(getInfoFor(classOf[Boolean]))
 
   implicit val mkByteTypeInfo: MkTypeInfo[Byte] =
-    MkTypeInfo(getInfoFor(classOf[Byte]))
+    this(getInfoFor(classOf[Byte]))
 
   implicit val mkShortTypeInfo: MkTypeInfo[Short] =
-    MkTypeInfo(getInfoFor(classOf[Short]))
+    this(getInfoFor(classOf[Short]))
 
   implicit val mkIntTypeInfo: MkTypeInfo[Int] =
-    MkTypeInfo(getInfoFor(classOf[Int]))
+    this(getInfoFor(classOf[Int]))
 
   implicit val mkLongTypeInfo: MkTypeInfo[Long] =
-    MkTypeInfo(getInfoFor(classOf[Long]))
+    this(getInfoFor(classOf[Long]))
 
   implicit val mkFloatTypeInfo: MkTypeInfo[Float] =
-    MkTypeInfo(getInfoFor(classOf[Float]))
+    this(getInfoFor(classOf[Float]))
 
   implicit val mkDoubleTypeInfo: MkTypeInfo[Double] =
-    MkTypeInfo(getInfoFor(classOf[Double]))
+    this(getInfoFor(classOf[Double]))
 
   implicit val mkCharTypeInfo: MkTypeInfo[Char] =
-    MkTypeInfo(getInfoFor(classOf[Char]))
+    this(getInfoFor(classOf[Char]))
 
   implicit val mkStringTypeInfo: MkTypeInfo[String] =
-    MkTypeInfo(STRING_TYPE_INFO)
+    this(STRING_TYPE_INFO)
 
   // Injections
 

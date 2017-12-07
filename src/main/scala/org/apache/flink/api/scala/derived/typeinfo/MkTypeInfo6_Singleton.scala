@@ -24,7 +24,7 @@ import shapeless.Witness
 import scala.reflect.ClassTag
 
 /** `TypeInformation` instances for `Singleton` objects. */
-trait MkTypeInfo6_Singleton extends MkTypeInfo7_Factory {
+private[typeinfo] abstract class MkTypeInfo6_Singleton extends MkTypeInfo7_Factory {
 
   /** Creates `TypeInformation` for the singleton object `S`. */
   implicit def mkSingletonTypeInfo[S](

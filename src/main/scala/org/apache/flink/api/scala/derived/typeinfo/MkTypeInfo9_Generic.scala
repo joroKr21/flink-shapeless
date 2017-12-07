@@ -16,13 +16,18 @@
 package org.apache.flink
 package api.scala.derived.typeinfo
 
+import api.common.typeinfo.TypeInformation
+
 import shapeless.Lazy
 
 /** Derived `TypeInformation` instances. */
-trait MkTypeInfo9_Generic {
+private[typeinfo] abstract class MkTypeInfo9_Generic {
+
+  def apply[A](instance: TypeInformation[A]): MkTypeInfo[A] =
+    new MkTypeInfo[A](instance)
 
   /** Derives `TypeInformation` for `A`. */
   implicit def mkGenericTypeInfo[A](
     implicit mk: Lazy[MkGenericTypeInfo[A]]
-  ): MkTypeInfo[A] = MkTypeInfo(mk.value())
+  ): MkTypeInfo[A] = this(mk.value())
 }

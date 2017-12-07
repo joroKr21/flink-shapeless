@@ -24,7 +24,4 @@ class MkTypeInfo[A](val instance: TypeInformation[A]) extends AnyVal {
 }
 
 /** Implicit `TypeInformation` instances. */
-object MkTypeInfo extends MkTypeInfo0_Basic {
-  def apply[A](instance: TypeInformation[A]): MkTypeInfo[A] =
-    new MkTypeInfo[A](instance)
-}
+object MkTypeInfo extends MkTypeInfo0_Basic

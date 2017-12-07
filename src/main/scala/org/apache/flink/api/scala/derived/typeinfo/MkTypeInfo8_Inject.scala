@@ -22,12 +22,12 @@ import api.scala.derived.typeutils._
 import scala.reflect.ClassTag
 
 /** `TypeInformation` instances based on `Inject`. */
-trait MkTypeInfo8_Inject extends MkTypeInfo9_Generic {
+private[typeinfo] abstract class MkTypeInfo8_Inject extends MkTypeInfo9_Generic {
 
   /** Creates `TypeInformation` for type `A` based on `Inject` into `B`. */
   implicit def mkInjectTypeInfo[A, B](
     implicit inj: Inject[A, B], tiB: TypeInformation[B], tag: ClassTag[A]
-  ): MkTypeInfo[A] = MkTypeInfo {
+  ): MkTypeInfo[A] = this {
     InjectTypeInfo[A, B](tiB)(inj)
   }
 }

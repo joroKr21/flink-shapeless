@@ -22,9 +22,9 @@ import types.Value
 import scala.reflect.ClassTag
 
 /** `TypeInformation` instances for `Value` types. */
-trait MkTypeInfo5_Value extends MkTypeInfo6_Singleton {
+private[typeinfo] abstract class MkTypeInfo5_Value extends MkTypeInfo6_Singleton {
 
   /** Creates `TypeInformation` for the `Value` type `V`. */
   implicit def mkValueTypeInfo[V <: Value](implicit tag: ClassTag[V]): MkTypeInfo[V] =
-    MkTypeInfo(new ValueTypeInfo(tag.runtimeClass.asInstanceOf[Class[V]]))
+    this(new ValueTypeInfo(tag.runtimeClass.asInstanceOf[Class[V]]))
 }

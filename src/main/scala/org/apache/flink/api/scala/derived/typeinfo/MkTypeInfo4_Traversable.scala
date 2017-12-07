@@ -29,11 +29,11 @@ import scala.collection.mutable
 import scala.reflect._
 
 /** `TypeInformation` instances for `Array`, `Traversable` and `Map`. */
-trait MkTypeInfo4_Traversable extends MkTypeInfo5_Value {
+private[typeinfo] abstract class MkTypeInfo4_Traversable extends MkTypeInfo5_Value {
 
   /** Creates `TypeInformation` for a (non-primitive) `Array`. */
   implicit def mkArrayTypeInfo[E](implicit tiE: TypeInformation[E]): MkTypeInfo[Array[E]] =
-    MkTypeInfo(ObjectArrayTypeInfo.getInfoFor(tiE))
+    this(ObjectArrayTypeInfo.getInfoFor(tiE))
 
   /** Creates `TypeInformation` for a `Traversable` collection. */
   implicit def mkTraversableTypeInfo[T[e] <: Traversable[e], E](
@@ -42,7 +42,7 @@ trait MkTypeInfo4_Traversable extends MkTypeInfo5_Value {
     tag: ClassTag[T[E]],
     cbf: CanBuild[E, T[E]],
     gen: T[E] <:< GenericTraversableTemplate[E, T]
-  ): MkTypeInfo[T[E]] = MkTypeInfo {
+  ): MkTypeInfo[T[E]] = this {
     // Workaround `CanBuildFrom` not being `Serializable`.
     new TraversableTypeInfo[T[E], E](tag.runtimeClass.asInstanceOf[Class[T[E]]], tiE) {
       val empty = cbf().result()
