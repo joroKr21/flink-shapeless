@@ -18,6 +18,7 @@ package api.scala.derived
 
 import api.common.typeinfo.TypeInformation
 import api.scala.derived.typeinfo.MkTypeInfo
+import api.scala.derived.typeutils.Refute
 
 import shapeless._
 
@@ -35,7 +36,7 @@ object auto {
    * [[api.scala.createTypeInformation]] (the macro based approach), because it has a default
    * catch-all case based on runtime reflection.
    *
-   * @param lp Evidence that no other implicit instance of `TypeInformation[A]` is in scope.
+   * @param ev Evidence that no other implicit instance of `TypeInformation[A]` is in scope.
    * @param mk The derived `TypeInformation` provider (`Strict` helps avoid divergence).
    * @tparam A A (possibly recursive) Algebraic Data Type (ADT).
    * @return The derived `TypeInformation` instance.
@@ -43,7 +44,7 @@ object auto {
   // Derive only when no other implicit instance is in scope.
   implicit def deriveTypeInfo[A](
     implicit
-    lp: LowPriority.Ignoring[Witness.`"createTypeInformation"`.T],
+    ev: Refute[TypeInformation[A]],
     mk: Strict[MkTypeInfo[A]]
   ): TypeInformation[A] = mk.value()
 
