@@ -5,8 +5,7 @@ lazy val ScalaMeter = new TestFramework("org.scalameter.ScalaMeterFramework")
 lazy val buildSettings = Seq(
   organization := "com.github",
   name := "flink-shapeless",
-  scalaVersion in ThisBuild := "2.11.11",
-  crossScalaVersions := Seq("2.10.6", "2.11.11")
+  scalaVersion := "2.11.12"
 )
 
 lazy val benchSettings = Seq(
@@ -23,11 +22,11 @@ lazy val coverageSettings = Seq[Def.SettingsDefinition](
 )
 
 val versions = new {
-  val flink = "1.3.2"
-  val shapeless = "2.3.2"
+  val flink = "1.4.0"
+  val shapeless = "2.3.3"
   val scalatest = "3.0.4"
   val scalacheck = "1.13.5"
-  val checkless = "1.1.7"
+  val checkless = "1.1.8"
   val scala_meter = "0.8.2"
   val scala_arm = "2.0"
   val utils = "1.07.00"
@@ -61,18 +60,13 @@ lazy val commonSettings = Seq(
     "-unchecked",
     "-language:higherKinds",
     "-Ywarn-dead-code",
+    "-Ywarn-unused",
+    "-Ywarn-unused-import",
     "-Xfatal-warnings",
     "-Xfuture",
     "-Xlint"
-  ) ++ {
-    if (scalaBinaryVersion.value.toDouble <= 2.10) Seq.empty
-    else Seq("-Ywarn-unused", "-Ywarn-unused-import")
-  },
-  libraryDependencies ++= compileDependencies ++ testDependencies ++ benchDependencies,
-  libraryDependencies ++= {
-    if (scalaBinaryVersion.value.toDouble > 2.10) Seq.empty
-    else Seq(compilerPlugin("org.scalamacros" % "paradise" % versions.paradise cross CrossVersion.patch))
-  }
+  ),
+  libraryDependencies ++= compileDependencies ++ testDependencies ++ benchDependencies
 )
 
 lazy val root = Project("flink-shapeless", file("."))

@@ -25,7 +25,7 @@ import core.memory._
 
 import com.Ostermiller.util.CircularByteBuffer
 
-import org.apache.commons.lang.SerializationUtils
+import org.apache.commons.lang3.SerializationUtils
 import org.scalacheck._
 import org.scalacheck.ScalacheckShapeless._
 import org.scalatest._
