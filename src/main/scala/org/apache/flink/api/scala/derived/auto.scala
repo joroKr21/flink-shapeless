@@ -18,7 +18,6 @@ package api.scala.derived
 
 import api.common.typeinfo.TypeInformation
 import api.scala.derived.typeinfo.MkTypeInfo
-import api.scala.derived.typeutils.Refute
 
 import shapeless._
 
